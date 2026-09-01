@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>School Zone GPS v12</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.13.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="v11.css">
+<style>
+#map{background:#eef3f7}.apiBtn{border:1px solid #d7dce3;background:#fff;border-radius:12px;padding:8px 11px;font-weight:700;cursor:pointer}.apiChip{font-size:10px;padding:5px 8px;border-radius:999px;background:#e6f4ea;color:#137333;font-weight:700}.apiChip.warn{background:#fce8e6;color:#b3261e}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;align-items:center;justify-content:center;padding:16px}.modalCard{width:min(560px,100%);background:white;border-radius:20px;box-shadow:0 18px 55px rgba(0,0,0,.32);padding:20px}.modalHead{display:flex;align-items:center;justify-content:space-between;gap:12px}.modalHead h2{font-size:20px;margin:0}.closeBtn{border:0;background:#f1f3f4;border-radius:999px;width:38px;height:38px;font-size:20px}.keyField{margin-top:16px}.keyField label{display:block;font-weight:700;margin-bottom:6px}.keyField input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #cfd5dc;border-radius:10px;font-size:15px}.help{font-size:12px;color:#5f6368;line-height:1.45;margin-top:5px}.modalBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}.safeStopText{font-weight:800;color:#b06000}.navArrow{width:34px;height:34px;display:flex;align-items:center;justify-content:center}.navArrowInner{width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:30px solid #0b69ff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}body.navMode .top,body.navMode .progress,body.navMode .status,body.navMode .legend{display:none!important}body.navMode #map{min-height:74vh}body.navMode .nav{display:flex!important;top:auto!important;left:12px!important;right:12px!important;bottom:18px!important;padding:10px 12px!important;border-radius:16px!important;flex-direction:column}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="titleRow"><h1>School Zone GPS</h1><span class="chip">STRICT AVOID SCHOOLS</span><span class="cacheChip" id="cacheState">Preloading Tampa + Orlando…</span><span class="apiChip warn" id="apiStatus">Routing API setup required</span></div>
+  <div class="sub">GraphHopper primary · OpenRouteService fallback · nearest safe-stop fallback · strict 1,000 ft school avoidance.</div>
+  <div class="search"><div class="fields"><div class="field"><input type="text" id="o" placeholder="Current location or starting point" autocomplete="off"><div class="sug" id="os"></div></div><div class="field"><input type="text" id="d" placeholder="Destination or place" autocomplete="off"><div class="sug" id="ds"></div></div></div><div class="sideBtns"><button class="secondary" id="loc">Use My Location</button><button class="primary" id="go">Find Route</button></div></div>
+  <div class="options"><label class="switch"><input type="checkbox" id="avoid" checked> Avoid schools (1,000 ft)</label><label class="switch"><input type="checkbox" id="restricted" checked> Restricted firearm locations</label><button id="apiSettingsBtn" class="apiBtn">Routing API Settings</button></div>
+  <div class="sub">v12: GraphHopper receives school polygons as custom-model forbidden areas. If a full route cannot be validated, the app searches for the closest reachable Safe Stop outside the final red zone.</div>
+</div>
+<div class="progress" id="prog"><div class="phead"><span id="stage">Starting…</span><span id="pct">0%</span></div><div class="track"><div class="fill" id="fill"></div></div><div class="pdetail" id="detail"></div></div>
+<div class="status" id="st">Loading application…</div>
+<div id="map"></div>
+<div class="legend"><div><span class="dot" style="background:#EA4335"></span>School 1,000 ft exclusion zone</div><div style="margin-top:4px"><span class="square" style="background:#8b1e1e"></span>Potential restricted location</div><div style="margin-top:4px"><span class="dot" style="background:#0b69ff"></span>Validated route</div></div>
+<div class="summary" id="sum"><div class="srow"><div><div class="big" id="sumMain"></div><div class="small" id="sumSub"></div><div class="small" id="destWarning"></div></div><button class="primary" id="navBtn">Navigation</button></div></div>
+<div class="nav" id="nav"><strong id="navTitle">Navigation</strong><small id="navText">Following your live position.</small><div class="navBtns"><button class="primary" id="gps">Start GPS</button><button class="secondary" id="exit">Exit</button></div></div>
+<div id="apiModal" class="modal"><div class="modalCard"><div class="modalHead"><h2>Routing API Settings</h2><button id="apiClose" class="closeBtn">×</button></div><div class="help">For strict school avoidance, use GraphHopper as the primary routing provider. The keys below are stored only in this browser's local storage and are not saved in the GitHub repository.</div><div class="keyField"><label for="ghKey">GraphHopper API key (recommended)</label><input id="ghKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste GraphHopper API key"><div class="help">GraphHopper custom models let the routing engine assign zero priority to roads inside each school exclusion polygon.</div></div><div class="keyField"><label for="orsKey">OpenRouteService API key (optional fallback)</label><input id="orsKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste ORS API key"><div class="help">Used only if GraphHopper fails and the avoid-area request fits the public ORS limits.</div></div><div class="modalBtns"><button id="apiClear" class="secondary">Clear Keys</button><button id="apiCancel" class="secondary">Cancel</button><button id="apiSave" class="primary">Save</button></div></div></div>
+<script src="v12-bootstrap.js?v=12.0.0"></script>
+</body>
+</html>
