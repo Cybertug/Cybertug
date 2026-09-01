@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>School Zone GPS v8</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="v8.css"></head><body>
+<header>
+  <h1>School Zone GPS <span class="tag">AVOID SCHOOLS · GPS</span></h1>
+  <div class="sub">Starts from your real GPS location and recalculates around detected school zones.</div>
+  <div class="sub">v8 · current-location routing · automatic GPS reroute · optional Google Maps/Places</div>
+</header>
+<div class="panel" id="panel">
+  <div class="originRow"><div class="field"><input id="o" placeholder="Current location or starting point" autocomplete="off"><div class="sug" id="os"></div></div><button class="locBtn" id="myLoc" type="button">Use My Location</button></div>
+  <div class="field"><input id="d" placeholder="Destination" autocomplete="off"><div class="sug" id="ds"></div></div>
+  <div class="actions"><button id="go">Find Route</button><button class="sec" id="optBtn">Options</button><button class="sec" id="sw">⇅</button></div>
+  <div id="optionsPanel">
+    <div class="optTitle">Route options</div>
+    <div class="optGrid">
+      <div><div class="optGroupTitle">Avoid</div><label class="optRow"><input type="checkbox" id="avoidSchools" checked> Schools</label><label class="optRow"><input type="checkbox" id="avoidHighways"> Highways</label><label class="optRow"><input type="checkbox" id="avoidTolls"> Tolls</label><label class="optRow"><input type="checkbox" id="avoidFerries"> Ferries</label></div>
+      <div><div class="optGroupTitle">Distance units</div><label class="optRow"><input type="radio" name="units" value="auto" checked> Automatic</label><label class="optRow"><input type="radio" name="units" value="miles"> miles</label><label class="optRow"><input type="radio" name="units" value="km"> km</label></div>
+    </div>
+    <div class="googleBox"><div class="optGroupTitle">Google Maps / Places (optional)</div><div class="googleRow"><input id="googleKey" type="password" placeholder="Paste Google Maps API key"><button class="sec" id="googleEnable" type="button">Enable Google</button></div><div id="googleStatus" class="googleStatus">Without a key, the app uses OpenStreetMap + public school GIS data. Your key is stored only in this browser.</div></div>
+  </div>
+  <div class="note">Avoid Schools is ON by default. The routing engine receives the school zones as forbidden polygons. Uses Florida school-ground polygons when available; point-only schools use a 1,000 ft approximate fallback.</div>
+</div>
+<div id="progressWrap"><div class="progressHead"><div id="progressStage">Starting…</div><div id="progressPct">0%</div></div><div class="progressTrack"><div id="progressFill"></div></div><div class="progressFoot"><span id="progressDetail">Preparing route</span><span id="elapsed">0s</span></div></div>
+<div id="mapWrap"><div id="map"></div><div id="gmap"></div></div>
+<div id="summary"><div class="sumrow"><div><div id="sumMain"></div><div id="sumSub"></div></div><button class="blue" id="navb">Navigation</button></div></div>
+<div id="nav"><strong id="next">Route ready</strong><small id="nd">Press Start GPS for live position.</small><div class="navBtns"><button class="green" id="gps">Start GPS</button><button class="sec" id="exit">Exit</button></div><div class="meta"><div><b id="eta">--</b><span>ETA</span></div><div><b id="remain">--</b><span>DISTANCE</span></div><div><b id="traveltime">--</b><span>TIME</span></div></div></div>
+<div id="st" class="status">Type an address to begin.</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<script src="v8-core1.js"></script><script src="v8-core2.js"></script><script src="v8-core3.js"></script><script src="v8-app.js"></script>
+</body></html>
