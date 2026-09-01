@@ -1,0 +1,43 @@
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f3f4f6;color:#111827}
+body{display:flex;flex-direction:column}
+header{padding:12px 14px;background:#fff;border-bottom:1px solid #e5e7eb}
+h1{font-size:19px;margin:0}.tag{font-size:10px;background:#fee2e2;color:#991b1b;padding:3px 7px;border-radius:20px;margin-left:6px}
+.sub{font-size:12px;color:#6b7280;margin-top:4px}
+.panel{padding:10px 12px;background:#fff;border-bottom:1px solid #e5e7eb;position:relative;z-index:700}
+.field{position:relative;margin-bottom:8px}
+input{width:100%;height:45px;border:1px solid #d1d5db;border-radius:12px;padding:0 12px;font-size:16px;outline:none}
+input:focus{border-color:#6b7280;box-shadow:0 0 0 3px rgba(17,24,39,.07)}
+.sug{display:none;position:absolute;top:48px;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 10px 24px #0002;z-index:1000;max-height:250px;overflow:auto}
+.it{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer}.it small{display:block;color:#6b7280;margin-top:2px}
+.originRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}.originRow .field{margin-bottom:8px}.locBtn{white-space:nowrap;background:#2563eb}.actions{display:grid;grid-template-columns:1fr auto auto;gap:8px}
+button{height:45px;border:0;border-radius:12px;padding:0 14px;font-weight:700;background:#111827;color:#fff;cursor:pointer}
+button.sec{background:#eef2f7;color:#111827}button.blue{background:#2563eb}button.green{background:#166534}button:disabled{opacity:.55}
+.note{font-size:10px;color:#6b7280;margin-top:7px}
+#mapWrap{flex:1;min-height:320px;position:relative}#map,#gmap{position:absolute;inset:0}#gmap{display:none}.googleBox{margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb}.googleBox input{height:40px;font-size:13px}.googleRow{display:grid;grid-template-columns:1fr auto;gap:8px}.googleStatus{font-size:10px;color:#6b7280;margin-top:5px}
+.status{padding:9px 12px;background:#fff;border-top:1px solid #e5e7eb;font-size:12px;min-height:36px}.ok{color:#166534}.warn{color:#b91c1c}
+#optionsPanel{display:none;margin-top:10px;border:1px solid #e5e7eb;border-radius:13px;background:#fff;padding:12px}
+.optTitle{font-size:14px;font-weight:800;margin-bottom:10px}
+.optGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.optGroupTitle{font-size:12px;font-weight:700;margin-bottom:7px}
+.optRow{display:flex;align-items:center;gap:8px;min-height:30px;font-size:13px}
+.optRow input{width:18px;height:18px;margin:0;box-shadow:none}
+.optRow input[type="radio"]{width:18px;height:18px}
+@media(max-width:520px){.optGrid{grid-template-columns:1fr 1fr;gap:10px}.actions{grid-template-columns:1fr auto auto}}
+#progressWrap{display:none;background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb;z-index:690}
+.progressHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:7px}
+#progressStage{font-size:12px;font-weight:700;min-width:0}
+#progressPct{font-size:12px;color:#6b7280;white-space:nowrap}
+.progressTrack{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+#progressFill{height:100%;width:0%;background:#2563eb;transition:width .35s ease}
+.progressFoot{display:flex;justify-content:space-between;font-size:10px;color:#6b7280;margin-top:5px}
+#summary{display:none;position:absolute;left:10px;right:10px;bottom:55px;background:#fff;padding:11px;border-radius:14px;z-index:800;box-shadow:0 8px 24px #0003}
+.sumrow{display:flex;justify-content:space-between;gap:10px;align-items:center}
+#sumMain{font-size:18px;font-weight:800}#sumSub{font-size:11px;color:#6b7280;margin-top:3px}
+#nav{display:none;position:absolute;top:72px;left:10px;right:10px;background:#111827;color:#fff;border-radius:14px;z-index:850;padding:12px;box-shadow:0 8px 24px #0004}
+#nav strong{font-size:19px;display:block}#nav small{display:block;margin-top:5px;color:#d1d5db}
+.navBtns{display:flex;gap:8px;margin-top:10px}.navBtns button{height:40px;flex:1}
+.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#374151;margin:10px -12px -12px}
+.meta div{background:#fff;color:#111827;text-align:center;padding:8px}.meta b{display:block;font-size:14px}.meta span{font-size:9px;color:#6b7280}
+@media(max-width:520px){#nav{top:66px}.panel{padding:9px}.progressHead{align-items:flex-start}}
