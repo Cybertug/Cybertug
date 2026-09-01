@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>School Zone GPS v11.5</title>
+<title>School Zone GPS v11.5.1</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.13.0/dist/maplibre-gl.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="v10.css">
@@ -42,7 +42,7 @@ body.navMode .nav{display:flex!important;top:auto!important;left:12px!important;
     <label class="switch"><input type="checkbox" id="restricted" checked> Restricted firearm locations</label>
   </div>
 
-  <div class="sub">v11.5: BRouter receives school centers as native 304.8 m no-go circles. MacDill searches prioritize the Dale Mabry main gate.</div>
+  <div class="sub">v11.5.1: if the trip starts inside a red school circle, the route may exit that circle once but cannot re-enter. MacDill searches prioritize the Dale Mabry main gate.</div>
 </div>
 
 <div class="progress" id="prog">
@@ -80,6 +80,7 @@ body.navMode .nav{display:flex!important;top:auto!important;left:12px!important;
   </div>
 </div>
 
-<script src="v11_5-bootstrap.js?v=11.5.0"></script>
+<script src="v11_5-bootstrap.js?v=11.5.1"></script>
+<script src="v11_5-hotfix.js?v=11.5.1"></script>
 </body>
 </html>
