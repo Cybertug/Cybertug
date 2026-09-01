@@ -1,0 +1,31 @@
+/* v11 mobile navigation overrides */
+html,body{height:100%;overflow:hidden}
+body{min-height:100%;}
+#map{position:relative;flex:1;min-height:360px;background:#dbe7ef}
+.maplibregl-map{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.maplibregl-ctrl-top-right{top:8px;right:8px}
+.maplibregl-ctrl-group{border-radius:12px!important;overflow:hidden;box-shadow:0 2px 8px #0003!important}
+.maplibregl-ctrl-group button{width:42px;height:42px}
+.valid{color:#137333;font-weight:800}
+.nav-location-arrow{width:26px;height:26px;background:#0878ff;border:4px solid #fff;border-radius:50%;box-shadow:0 2px 9px #0006;position:relative}
+.nav-location-arrow:before{content:"";position:absolute;left:50%;top:-18px;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:20px solid #0878ff;filter:drop-shadow(0 -1px 1px #fff)}
+.nav-location-arrow:after{content:"";position:absolute;inset:5px;border-radius:50%;background:#fff}
+
+/* Navigation becomes a compact bottom control, never a center modal. */
+.nav{display:none!important;position:absolute!important;left:10px!important;right:10px!important;bottom:14px!important;top:auto!important;z-index:1200!important;background:rgba(255,255,255,.96)!important;color:#202124!important;border:1px solid #dadce0!important;border-radius:18px!important;padding:9px 10px!important;box-shadow:0 3px 16px #0003!important;align-items:center!important;gap:10px!important;backdrop-filter:blur(12px)}
+.nav[style*="display: flex"]{display:flex!important}
+.nav strong{font-size:14px!important;white-space:nowrap}.nav small{font-size:11px!important;margin:0!important;color:#5f6368!important;flex:1;min-width:0}
+.navBtns{display:flex!important;gap:7px!important;margin:0!important;margin-left:auto!important}.navBtns button{height:42px!important;padding:0 13px!important;min-width:92px!important}.navBtns #gps.active{background:#137333!important}
+
+body.nav-mode .top,body.nav-mode .progress,body.nav-mode .status,body.nav-mode .legend,body.nav-mode .summary{display:none!important}
+body.nav-mode #map{position:absolute;inset:0;width:100%;height:100%;min-height:100%}
+body.nav-mode .nav{display:flex!important}
+body.nav-mode .maplibregl-ctrl-top-right{top:12px;right:12px}
+
+@media(max-width:600px){
+  .top{padding:8px 10px!important}.titleRow h1{font-size:18px!important}.sub{font-size:10px!important}
+  .nav{left:8px!important;right:8px!important;bottom:10px!important;border-radius:16px!important}
+  .nav strong{display:none!important}.nav small{font-size:10px!important}
+  .navBtns button{min-width:82px!important;padding:0 10px!important}
+  body.nav-mode .maplibregl-ctrl-top-right{top:10px;right:8px}
+}
