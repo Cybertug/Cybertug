@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>School Zone GPS v10.1</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="v10.css">
+</head>
+<body>
+<div class="top">
+  <div class="titleRow">
+    <h1>School Zone GPS</h1>
+    <span class="chip">STRICT AVOID SCHOOLS</span>
+    <span class="cacheChip" id="cacheState">Preloading Tampa + Orlando…</span>
+  </div>
+  <div class="sub">Google Maps-style interface · strict 1,000 ft school avoidance · no unsafe route is displayed.</div>
+  <div class="search">
+    <div class="fields">
+      <div class="field"><input type="text" id="o" placeholder="Current location or starting point" autocomplete="off"><div class="sug" id="os"></div></div>
+      <div class="field"><input type="text" id="d" placeholder="Destination" autocomplete="off"><div class="sug" id="ds"></div></div>
+    </div>
+    <div class="sideBtns">
+      <button class="secondary" id="loc">Use My Location</button>
+      <button class="primary" id="go">Find Route</button>
+    </div>
+  </div>
+  <div class="options">
+    <label class="switch"><input type="checkbox" id="avoid" checked> Avoid schools (1,000 ft)</label>
+    <label class="switch"><input type="checkbox" id="restricted" checked> Restricted firearm locations</label>
+  </div>
+  <div class="sub">v10.1: a route must pass final geometry validation with ZERO school-zone intersections before Navigation is enabled.</div>
+</div>
+
+<div class="progress" id="prog">
+  <div class="phead"><span id="stage">Starting…</span><span id="pct">0%</span></div>
+  <div class="track"><div class="fill" id="fill"></div></div>
+  <div class="pdetail" id="detail"></div>
+</div>
+
+<div class="status" id="st">Enter a destination. Starting point can use your GPS location.</div>
+<div id="map"></div>
+
+<div class="legend">
+  <div><span class="dot" style="background:#ea4335"></span>School 1,000 ft exclusion zone</div>
+  <div style="margin-top:4px"><span class="square" style="background:#8b1e1e"></span>Potential restricted location</div>
+  <div style="margin-top:4px"><span class="dot" style="background:#0057FF"></span>Validated route</div>
+</div>
+
+<div class="summary" id="sum">
+  <div class="srow">
+    <div>
+      <div class="big" id="sumMain"></div>
+      <div class="small" id="sumSub"></div>
+      <div class="small" id="destWarning"></div>
+    </div>
+    <button class="primary" id="navBtn">Navigation</button>
+  </div>
+</div>
+
+<div class="nav" id="nav">
+  <strong id="navTitle">Navigation</strong>
+  <small id="navText">Press Start GPS to follow your current position.</small>
+  <div class="navBtns">
+    <button class="primary" id="gps">Start GPS</button>
+    <button class="secondary" id="exit">Exit</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<script src="v10-core.js"></script>
+<script src="v10_1-routing.js"></script>
+<script src="v10_1-app.js"></script>
+</body>
+</html>
