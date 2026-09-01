@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>School Zone GPS v11.2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.13.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="v10.css">
+<link rel="stylesheet" href="v11.css">
+<style>
+#map{background:#eef3f7}
+.navArrow{width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.navArrowInner{width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:30px solid #1a73e8;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+body.navMode .top,body.navMode .progress,body.navMode .status,body.navMode .legend{display:none!important}
+body.navMode #map{min-height:74vh}
+body.navMode .nav{display:flex!important;top:auto!important;left:12px!important;right:12px!important;bottom:18px!important;padding:10px 12px!important;border-radius:16px!important;flex-direction:column}
+.maplibregl-ctrl-group{border-radius:12px!important;overflow:hidden}
+.maplibregl-popup-content{border-radius:12px;padding:12px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="titleRow"><h1>School Zone GPS</h1><span class="chip">STRICT AVOID SCHOOLS</span><span class="cacheChip" id="cacheState">Preloading Tampa + Orlando…</span></div>
+  <div class="sub">Google-like vector presentation · smart nearby search · strict 1,000 ft school avoidance.</div>
+  <div class="search"><div class="fields"><div class="field"><input type="text" id="o" placeholder="Current location or starting point" autocomplete="off"><div class="sug" id="os"></div></div><div class="field"><input type="text" id="d" placeholder="Destination or place" autocomplete="off"><div class="sug" id="ds"></div></div></div><div class="sideBtns"><button class="secondary" id="loc">Use My Location</button><button class="primary" id="go">Find Route</button></div></div>
+  <div class="options"><label class="switch"><input type="checkbox" id="avoid" checked> Avoid schools (1,000 ft)</label><label class="switch"><input type="checkbox" id="restricted" checked> Restricted firearm locations</label></div>
+  <div class="sub">v11.2: brighter vector road hierarchy, POI/place labels, 3D follow mode, and fuzzy geocoding biased toward your route/Florida.</div>
+</div>
+<div class="progress" id="prog"><div class="phead"><span id="stage">Starting…</span><span id="pct">0%</span></div><div class="track"><div class="fill" id="fill"></div></div><div class="pdetail" id="detail"></div></div>
+<div class="status" id="st">Loading application…</div>
+<div id="map"></div>
+<div class="legend"><div><span class="dot" style="background:#EA4335"></span>School 1,000 ft exclusion zone</div><div style="margin-top:4px"><span class="square" style="background:#8b1e1e"></span>Potential restricted location</div><div style="margin-top:4px"><span class="dot" style="background:#1a73e8"></span>Validated route</div></div>
+<div class="summary" id="sum"><div class="srow"><div><div class="big" id="sumMain"></div><div class="small" id="sumSub"></div><div class="small" id="destWarning"></div></div><button class="primary" id="navBtn">Navigation</button></div></div>
+<div class="nav" id="nav"><strong id="navTitle">Navigation</strong><small id="navText">Following your live position.</small><div class="navBtns"><button class="primary" id="gps">Start GPS</button><button class="secondary" id="exit">Exit</button></div></div>
+<script src="v11_2-bootstrap.js?v=11.2.0"></script>
+</body>
+</html>
