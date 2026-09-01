@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>School Zone GPS</title>
+<title>School Zone GPS v7</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{box-sizing:border-box}
@@ -18,12 +18,24 @@ input{width:100%;height:45px;border:1px solid #d1d5db;border-radius:12px;padding
 input:focus{border-color:#6b7280;box-shadow:0 0 0 3px rgba(17,24,39,.07)}
 .sug{display:none;position:absolute;top:48px;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 10px 24px #0002;z-index:1000;max-height:250px;overflow:auto}
 .it{padding:10px 12px;border-bottom:1px solid #eee;cursor:pointer}.it small{display:block;color:#6b7280;margin-top:2px}
-.actions{display:grid;grid-template-columns:1fr auto;gap:8px}
+.actions{display:grid;grid-template-columns:1fr auto auto;gap:8px}
 button{height:45px;border:0;border-radius:12px;padding:0 14px;font-weight:700;background:#111827;color:#fff;cursor:pointer}
 button.sec{background:#eef2f7;color:#111827}button.blue{background:#2563eb}button.green{background:#166534}button:disabled{opacity:.55}
 .note{font-size:10px;color:#6b7280;margin-top:7px}
 #map{flex:1;min-height:320px}
 .status{padding:9px 12px;background:#fff;border-top:1px solid #e5e7eb;font-size:12px;min-height:36px}.ok{color:#166534}.warn{color:#b91c1c}
+
+/* Route options */
+#optionsPanel{display:none;margin-top:10px;border:1px solid #e5e7eb;border-radius:13px;background:#fff;padding:12px}
+.optTitle{font-size:14px;font-weight:800;margin-bottom:10px}
+.optGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.optGroupTitle{font-size:12px;font-weight:700;margin-bottom:7px}
+.optRow{display:flex;align-items:center;gap:8px;min-height:30px;font-size:13px}
+.optRow input{width:18px;height:18px;margin:0;box-shadow:none}
+.optRow input[type="radio"]{width:18px;height:18px}
+@media(max-width:520px){.optGrid{grid-template-columns:1fr 1fr;gap:10px}.actions{grid-template-columns:1fr auto auto}}
+
+/* Progress */
 #progressWrap{display:none;background:#fff;padding:10px 12px;border-bottom:1px solid #e5e7eb;z-index:690}
 .progressHead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:7px}
 #progressStage{font-size:12px;font-weight:700;min-width:0}
@@ -31,6 +43,8 @@ button.sec{background:#eef2f7;color:#111827}button.blue{background:#2563eb}butto
 .progressTrack{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden}
 #progressFill{height:100%;width:0%;background:#2563eb;transition:width .35s ease}
 .progressFoot{display:flex;justify-content:space-between;font-size:10px;color:#6b7280;margin-top:5px}
+
+/* Route/nav */
 #summary{display:none;position:absolute;left:10px;right:10px;bottom:55px;background:#fff;padding:11px;border-radius:14px;z-index:800;box-shadow:0 8px 24px #0003}
 .sumrow{display:flex;justify-content:space-between;gap:10px;align-items:center}
 #sumMain{font-size:18px;font-weight:800}#sumSub{font-size:11px;color:#6b7280;margin-top:3px}
@@ -44,62 +58,491 @@ button.sec{background:#eef2f7;color:#111827}button.blue{background:#2563eb}butto
 </head>
 <body>
 <header>
-  <h1>School Zone GPS <span class="tag">NCES SAFE MODE</span></h1>
-  <div class="sub">Uses official NCES public + private school locations and a conservative 1,500 ft fallback buffer.</div>
-  <div class="sub">v6 · NCES ArcGIS school data · no Overpass dependency</div>
+  <h1>School Zone GPS <span class="tag">AVOID SCHOOLS</span></h1>
+  <div class="sub">Calculates the route with school exclusion zones blocked inside the routing engine.</div>
 </header>
+
 <div class="panel" id="panel">
   <div class="field"><input id="o" placeholder="Starting point" autocomplete="off"><div class="sug" id="os"></div></div>
   <div class="field"><input id="d" placeholder="Destination" autocomplete="off"><div class="sug" id="ds"></div></div>
-  <div class="actions"><button id="go">Find Route</button><button class="sec" id="sw">⇅</button></div>
-  <div class="note">School lookup now uses official NCES ArcGIS data instead of Overpass. Public schools: 2024–25; private schools: 2023–24. Point buffers are conservative and do not replace exact property-boundary verification.</div>
+  <div class="actions">
+    <button id="go">Find Route</button>
+    <button class="sec" id="optBtn">Options</button>
+    <button class="sec" id="sw">⇅</button>
+  </div>
+  <div id="optionsPanel">
+    <div class="optTitle">Route options</div>
+    <div class="optGrid">
+      <div>
+        <div class="optGroupTitle">Avoid</div>
+        <label class="optRow"><input type="checkbox" id="avoidSchools" checked> Schools</label>
+        <label class="optRow"><input type="checkbox" id="avoidHighways"> Highways</label>
+        <label class="optRow"><input type="checkbox" id="avoidTolls"> Tolls</label>
+        <label class="optRow"><input type="checkbox" id="avoidFerries"> Ferries</label>
+      </div>
+      <div>
+        <div class="optGroupTitle">Distance units</div>
+        <label class="optRow"><input type="radio" name="units" value="auto" checked> Automatic</label>
+        <label class="optRow"><input type="radio" name="units" value="miles"> miles</label>
+        <label class="optRow"><input type="radio" name="units" value="km"> km</label>
+      </div>
+    </div>
+  </div>
+  <div class="note">Avoid Schools is ON by default. The routing engine receives the school zones as forbidden polygons. Uses Florida school-ground polygons when available; point-only schools use a conservative 1,500 ft fallback.</div>
 </div>
+
 <div id="progressWrap">
   <div class="progressHead"><div id="progressStage">Starting…</div><div id="progressPct">0%</div></div>
   <div class="progressTrack"><div id="progressFill"></div></div>
   <div class="progressFoot"><span id="progressDetail">Preparing route</span><span id="elapsed">0s</span></div>
 </div>
+
 <div id="map"></div>
-<div id="summary"><div class="sumrow"><div><div id="sumMain"></div><div id="sumSub"></div></div><button class="blue" id="navb">Navigation</button></div></div>
-<div id="nav"><strong id="next">Route ready</strong><small id="nd">Press Start GPS for live position.</small><div class="navBtns"><button class="green" id="gps">Start GPS</button><button class="sec" id="exit">Exit</button></div><div class="meta"><div><b id="eta">--</b><span>ETA</span></div><div><b id="remain">--</b><span>DISTANCE</span></div><div><b id="traveltime">--</b><span>TIME</span></div></div></div>
+
+<div id="summary">
+  <div class="sumrow">
+    <div><div id="sumMain"></div><div id="sumSub"></div></div>
+    <button class="blue" id="navb">Navigation</button>
+  </div>
+</div>
+
+<div id="nav">
+  <strong id="next">Route ready</strong>
+  <small id="nd">Press Start GPS for live position.</small>
+  <div class="navBtns"><button class="green" id="gps">Start GPS</button><button class="sec" id="exit">Exit</button></div>
+  <div class="meta">
+    <div><b id="eta">--</b><span>ETA</span></div>
+    <div><b id="remain">--</b><span>DISTANCE</span></div>
+    <div><b id="traveltime">--</b><span>TIME</span></div>
+  </div>
+</div>
+
 <div id="st" class="status">Type an address to begin.</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 <script>
-const R=457.2,$=x=>document.getElementById(x);
+const R=304.8,$=x=>document.getElementById(x);
 const map=L.map('map').setView([27.9506,-82.4572],10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
 const sl=L.layerGroup().addTo(map),rl=L.layerGroup().addTo(map),ml=L.layerGroup().addTo(map),gl=L.layerGroup().addTo(map);
 let schools=[],SO=null,SD=null,AR=null,AD=null,W=null,timers={},progressTimer=null,progressStart=0;
+
 function stat(t,c=''){$('st').className='status '+c;$('st').innerHTML=t}
-function setProgress(p,stage,detail=''){$('progressWrap').style.display='block';p=Math.max(0,Math.min(100,p));$('progressFill').style.width=p+'%';$('progressPct').textContent=Math.round(p)+'%';$('progressStage').textContent=stage;$('progressDetail').textContent=detail||stage}
-function startProgress(){clearInterval(progressTimer);progressStart=Date.now();$('elapsed').textContent='0s';setProgress(3,'Starting route calculation','Preparing');progressTimer=setInterval(()=>$('elapsed').textContent=Math.round((Date.now()-progressStart)/1000)+'s',1000)}
-function endProgress(){clearInterval(progressTimer);setProgress(100,'Route ready','Validation complete')}
-function failProgress(msg){clearInterval(progressTimer);$('progressFill').style.background='#b91c1c';$('progressStage').textContent='Could not complete route';$('progressDetail').textContent=msg}
+function setProgress(p,stage,detail=''){
+  $('progressWrap').style.display='block';
+  p=Math.max(0,Math.min(100,p));
+  $('progressFill').style.width=p+'%';
+  $('progressPct').textContent=Math.round(p)+'%';
+  $('progressStage').textContent=stage;
+  $('progressDetail').textContent=detail||stage;
+}
+function startProgress(){
+  clearInterval(progressTimer);progressStart=Date.now();
+  $('elapsed').textContent='0s';setProgress(3,'Starting route calculation','Preparing');
+  progressTimer=setInterval(()=>$('elapsed').textContent=Math.round((Date.now()-progressStart)/1000)+'s',1000);
+}
+function endProgress(ok=true){
+  clearInterval(progressTimer);
+  if(ok)setProgress(100,'Route ready','Validation complete');
+}
+function failProgress(msg){
+  clearInterval(progressTimer);
+  $('progressFill').style.background='#b91c1c';
+  $('progressStage').textContent='Could not complete route';
+  $('progressDetail').textContent=msg;
+}
 function resetProgressColor(){$('progressFill').style.background='#2563eb'}
-async function j(url,opt={},ms=22000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{...opt,signal:c.signal});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}catch(e){if(e.name==='AbortError')throw Error('Request timed out');throw e}finally{clearTimeout(t)}}
+
+async function j(url,opt={},ms=22000){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+  try{
+    const r=await fetch(url,{...opt,signal:c.signal});
+    if(!r.ok)throw Error('HTTP '+r.status);
+    return await r.json();
+  }catch(e){if(e.name==='AbortError')throw Error('Request timed out');throw e}
+  finally{clearTimeout(t)}
+}
 async function addr(q){return j('https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=us&q='+encodeURIComponent(q),{},12000)}
-function pa(x){let a=x.address||{},x1=[a.house_number,a.road].filter(Boolean).join(' ')||x.display_name.split(',')[0];let x2=[a.city||a.town||a.village||a.county,a.state,a.postcode].filter(Boolean).join(', ');return[x1,x2]}
-function ac(k){const i=$(k),b=$(k+'s');i.oninput=()=>{k==='o'?SO=null:SD=null;clearTimeout(timers[k]);const q=i.value.trim();if(q.length<3){b.style.display='none';return}timers[k]=setTimeout(async()=>{try{const z=await addr(q);b.innerHTML='';z.forEach(x=>{const p=pa(x),e=document.createElement('div');e.className='it';e.innerHTML='<b>'+p[0]+'</b><small>'+p[1]+'</small>';e.onclick=()=>{const v={lat:+x.lat,lon:+x.lon,label:x.display_name};k==='o'?SO=v:SD=v;i.value=p[0]+(p[1]?', '+p[1]:'');b.style.display='none'};b.appendChild(e)});b.style.display=z.length?'block':'none'}catch(e){console.warn('autocomplete',e)}},300)}}
-ac('o');ac('d');document.addEventListener('click',e=>{if(!e.target.closest('.field')){$('os').style.display='none';$('ds').style.display='none'}});
-async function resolve(q,s){if(s)return s;const z=await addr(q);if(!z.length)throw Error('Address not found: '+q);return{lat:+z[0].lat,lon:+z[0].lon,label:z[0].display_name}}
-async function routes(a,b,alt=true,w=[]){const pts=[a,...w,b],c=pts.map(p=>p.lon+','+p.lat).join(';');const tail='/'+c+'?overview=full&geometries=geojson&steps=true&alternatives='+(alt?'true':'false');const urls=['https://router.project-osrm.org/route/v1/driving'+tail,'https://routing.openstreetmap.de/routed-car/route/v1/driving'+tail];let errs=[];for(const u of urls){try{const z=await j(u,{},22000);if(z.routes?.length)return z.routes;errs.push('no route')}catch(e){errs.push(e.message)}}throw Error('Routing service unavailable: '+errs.join(' / '))}
-const NCES_PUBLIC='https://nces.ed.gov/opengis/rest/services/K12_School_Locations/EDGE_GEOCODE_PUBLICSCH_2425/MapServer/0/query';
-const NCES_PRIVATE='https://nces.ed.gov/opengis/rest/services/K12_School_Locations/EDGE_GEOCODE_PRIVATESCH_2324/MapServer/0/query';
-function routeEnvelope(route,padKm=2.5){const c=route.geometry.coordinates;let mnx=Infinity,mxx=-Infinity,mny=Infinity,mxy=-Infinity;for(const v of c){mnx=Math.min(mnx,v[0]);mxx=Math.max(mxx,v[0]);mny=Math.min(mny,v[1]);mxy=Math.max(mxy,v[1])}const mid=(mny+mxy)/2,dp=padKm/111,op=padKm/(111*Math.max(.2,Math.cos(mid*Math.PI/180)));return{xmin:mnx-op,ymin:mny-dp,xmax:mxx+op,ymax:mxy+dp}}
-async function ncesLayer(url,route,type){const b=routeEnvelope(route,3.0);const params=new URLSearchParams({where:"STATE='FL'",geometry:`${b.xmin},${b.ymin},${b.xmax},${b.ymax}`,geometryType:'esriGeometryEnvelope',inSR:'4326',spatialRel:'esriSpatialRelIntersects',outFields:type==='public'?'NCESSCH,NAME,STATE,LAT,LON':'PPIN,NAME,STATE,LAT,LON',returnGeometry:'true',outSR:'4326',f:'json'});let lastErr=null;for(let attempt=1;attempt<=2;attempt++){try{const data=await j(url+'?'+params.toString(),{},18000);if(data.error)throw Error(data.error.message||'NCES ArcGIS error');return(data.features||[]).map((f,i)=>{const a=f.attributes||{},g=f.geometry||{};const lat=Number.isFinite(+a.LAT)?+a.LAT:+g.y;const lon=Number.isFinite(+a.LON)?+a.LON:+g.x;if(!Number.isFinite(lat)||!Number.isFinite(lon))return null;return{id:type==='public'?(a.NCESSCH||i):(a.PPIN||i),type,name:a.NAME||((type==='public'?'Public':'Private')+' school'),lat,lon,g:null,source:'NCES'}}).filter(Boolean)}catch(e){lastErr=e;await new Promise(r=>setTimeout(r,500*attempt))}}throw lastErr||Error('NCES school service unavailable')}
-function nearRoute(center,route,maxKm=2.2){try{const line=turf.lineString(route.geometry.coordinates);return turf.pointToLineDistance(turf.point([center.lon,center.lat]),line,{units:'kilometers'})<=maxKm}catch(_){return true}}
-async function loadNcesSchools(route){setProgress(39,'Loading public schools','NCES 2024–25 public school locations');const publicPromise=ncesLayer(NCES_PUBLIC,route,'public');setProgress(45,'Loading private schools','NCES 2023–24 private/parochial school locations');const privatePromise=ncesLayer(NCES_PRIVATE,route,'private');const results=await Promise.allSettled([publicPromise,privatePromise]);const pub=results[0].status==='fulfilled'?results[0].value:[];const pri=results[1].status==='fulfilled'?results[1].value:[];const errors=[];if(results[0].status==='rejected')errors.push('public: '+results[0].reason.message);if(results[1].status==='rejected')errors.push('private: '+results[1].reason.message);if(!pub.length&&!pri.length)throw Error('NCES school services unavailable: '+errors.join(' / '));if(results.some(r=>r.status==='rejected'))throw Error('NCES school data incomplete: '+errors.join(' / '));const merged=[...pub,...pri].filter(s=>nearRoute(s,route,2.2));const seen=new Set();return merged.filter(s=>{const k=s.type+':'+s.id;if(seen.has(k))return false;seen.add(k);return true})}
-function zone(s){return turf.buffer(turf.point([s.lon,s.lat]),R/1000,{units:'kilometers',steps:32})}
-function drawS(){sl.clearLayers();schools.forEach(s=>L.geoJSON(zone(s),{style:{color:'#b91c1c',weight:1,fillColor:'#ef4444',fillOpacity:.15}}).bindPopup('<b>'+s.name+'</b><br>'+s.type+' school · NCES location<br>1,500 ft conservative point buffer').addTo(sl))}
-function hits(r){const l=turf.lineString(r.geometry.coordinates);return schools.filter(s=>{try{return turf.booleanIntersects(l,zone(s))}catch(_){return false}})}
-function det(s,a,b,o,dist){const br=turf.bearing(turf.point([a.lon,a.lat]),turf.point([b.lon,b.lat]))+o;const p=turf.destination(turf.point([s.lon,s.lat]),dist/1000,br,{units:'kilometers'}).geometry.coordinates;return{lon:p[0],lat:p[1]}}
-async function strict(a,b){let rs=await routes(a,b,true);let clean=rs.filter(r=>!hits(r).length).sort((x,y)=>x.duration-y.duration);if(clean.length)return clean[0];let best=rs.sort((x,y)=>hits(x).length-hits(y).length||x.duration-y.duration)[0],wps=[];for(let pass=0;pass<5;pass++){const h=hits(best);if(!h.length)return best;let cand=[];for(const o of [90,-90,120,-120,150,-150]){try{const wp=det(h[0],a,b,o,650+pass*180),r=(await routes(a,b,false,[...wps,wp]))[0];cand.push({r,wp,n:hits(r).length})}catch(_){}}if(!cand.length)break;cand.sort((x,y)=>x.n-y.n||x.r.duration-y.r.duration);best=cand[0].r;if(cand[0].n<h.length)wps.push(cand[0].wp)}return hits(best).length?null:best}
-function drawR(r,a,b){rl.clearLayers();ml.clearLayers();const ll=r.geometry.coordinates.map(c=>[c[1],c[0]]);L.polyline(ll,{color:'#111827',weight:6}).addTo(rl);L.marker([a.lat,a.lon]).bindPopup('Start').addTo(ml);L.marker([b.lat,b.lon]).bindPopup('Destination').addTo(ml);map.fitBounds(ll,{padding:[30,30]})}
-function fmtMiles(m){return(m/1609.344).toFixed(1)+' mi'}function fmtTime(sec){const m=Math.round(sec/60);return m<60?m+' min':Math.floor(m/60)+'h '+m%60+'m'}function eta(sec){return new Date(Date.now()+sec*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
-function openNav(){if(!AR)return;$('panel').style.display='none';$('summary').style.display='none';$('nav').style.display='block';$('next').textContent='Follow highlighted route';$('nd').textContent='Press Start GPS for live position.';$('eta').textContent=eta(AR.duration);$('remain').textContent=fmtMiles(AR.distance);$('traveltime').textContent=fmtTime(AR.duration)}
-$('go').onclick=async()=>{const oq=$('o').value.trim(),dq=$('d').value.trim();if(!oq||!dq)return stat('Enter both addresses.','warn');$('go').disabled=true;$('summary').style.display='none';$('nav').style.display='none';resetProgressColor();startProgress();try{setProgress(8,'Resolving addresses','Checking origin and destination');const a=await resolve(oq,SO),b=await resolve(dq,SD);AD=b;setProgress(20,'Calculating preliminary route','Finding the fastest normal route');const pre=(await routes(a,b,true)).sort((x,y)=>x.duration-y.duration)[0];setProgress(34,'Connecting to NCES','Official U.S. Department of Education school-location data');schools=await loadNcesSchools(pre);drawS();const pubCount=schools.filter(s=>s.type==='public').length,priCount=schools.filter(s=>s.type==='private').length;setProgress(58,'School data loaded',pubCount+' public + '+priCount+' private schools near route');setProgress(70,'Calculating school-safe route','Testing alternate streets around conservative NCES buffers');let r=await strict(a,b);if(!r)throw Error('No route found outside every conservative school buffer.');setProgress(84,'Final NCES validation','Checking public and private schools around the selected route');const more=await loadNcesSchools(r),m=new Map();[...schools,...more].forEach(s=>m.set(s.type+':'+s.id,s));schools=[...m.values()];drawS();if(hits(r).length){setProgress(91,'Recalculating final detour','A school buffer was found during final validation');r=await strict(a,b);if(!r||hits(r).length)throw Error('Could not validate a final route outside mapped school buffers.')}setProgress(98,'Drawing route','Preparing navigation view');AR=r;drawR(r,a,b);$('sumMain').textContent=fmtTime(r.duration)+' · '+fmtMiles(r.distance);$('sumSub').textContent='Checked '+schools.length+' nearby NCES public/private schools using 1,500 ft conservative buffers';$('summary').style.display='block';endProgress();stat('Route ready using NCES school data. Navigation view opened.','ok');setTimeout(openNav,350)}catch(e){console.error(e);failProgress(e.message||String(e));stat('Could not calculate route: '+(e.message||String(e)),'warn')}finally{$('go').disabled=false}};
-$('sw').onclick=()=>{let x=$('o').value;$('o').value=$('d').value;$('d').value=x;let q=SO;SO=SD;SD=q};$('navb').onclick=openNav;$('exit').onclick=()=>{$('nav').style.display='none';$('panel').style.display='block';$('summary').style.display=AR?'block':'none';if(W!==null){navigator.geolocation.clearWatch(W);W=null;$('gps').textContent='Start GPS'}};$('gps').onclick=()=>{if(!navigator.geolocation)return stat('GPS unavailable in this browser.','warn');if(W!==null)return;$('gps').textContent='GPS Active';W=navigator.geolocation.watchPosition(p=>{const a=p.coords.latitude,b=p.coords.longitude;gl.clearLayers();L.circleMarker([a,b],{radius:8,color:'#1d4ed8',fillColor:'#3b82f6',fillOpacity:1,weight:3}).addTo(gl);map.setView([a,b],Math.max(map.getZoom(),16))},e=>{stat('GPS error: '+e.message,'warn');$('gps').textContent='Start GPS';W=null},{enableHighAccuracy:true,maximumAge:2000,timeout:15000})};
+function pa(x){
+  let a=x.address||{},x1=[a.house_number,a.road].filter(Boolean).join(' ')||x.display_name.split(',')[0];
+  let x2=[a.city||a.town||a.village||a.county,a.state,a.postcode].filter(Boolean).join(', ');
+  return[x1,x2]
+}
+function ac(k){
+  const i=$(k),b=$(k+'s');
+  i.oninput=()=>{
+    k==='o'?SO=null:SD=null;clearTimeout(timers[k]);const q=i.value.trim();
+    if(q.length<3){b.style.display='none';return}
+    timers[k]=setTimeout(async()=>{
+      try{
+        const z=await addr(q);b.innerHTML='';
+        z.forEach(x=>{
+          const p=pa(x),e=document.createElement('div');e.className='it';
+          e.innerHTML='<b>'+p[0]+'</b><small>'+p[1]+'</small>';
+          e.onclick=()=>{const v={lat:+x.lat,lon:+x.lon,label:x.display_name};k==='o'?SO=v:SD=v;i.value=p[0]+(p[1]?', '+p[1]:'');b.style.display='none'};
+          b.appendChild(e)
+        });
+        b.style.display=z.length?'block':'none'
+      }catch(e){console.warn('autocomplete',e)}
+    },300)
+  }
+}
+ac('o');ac('d');
+document.addEventListener('click',e=>{if(!e.target.closest('.field')){$('os').style.display='none';$('ds').style.display='none'}});
+
+async function resolve(q,s){
+  if(s)return s;
+  const z=await addr(q);if(!z.length)throw Error('Address not found: '+q);
+  return{lat:+z[0].lat,lon:+z[0].lon,label:z[0].display_name}
+}
+
+async function routes(a,b,alt=true,w=[]){
+  const pts=[a,...w,b],c=pts.map(p=>p.lon+','+p.lat).join(';');
+  const tail='/'+c+'?overview=full&geometries=geojson&steps=true&alternatives='+(alt?'true':'false');
+  const urls=['https://router.project-osrm.org/route/v1/driving'+tail,'https://routing.openstreetmap.de/routed-car/route/v1/driving'+tail];
+  let errs=[];
+  for(let u of urls){
+    try{const z=await j(u,{},22000);if(z.routes?.length)return z.routes;errs.push('no route')}
+    catch(e){errs.push(e.message)}
+  }
+  throw Error('Routing service unavailable: '+errs.join(' / '))
+}
+
+function routeOptions(){
+  const u=document.querySelector('input[name="units"]:checked')?.value||'auto';
+  return{
+    schools:$('avoidSchools').checked,
+    highways:$('avoidHighways').checked,
+    tolls:$('avoidTolls').checked,
+    ferries:$('avoidFerries').checked,
+    units:u
+  }
+}
+
+function decodePolyline6(str){
+  let index=0,lat=0,lon=0,out=[];
+  while(index<str.length){
+    let result=0,shift=0,b;
+    do{b=str.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5}while(b>=0x20);
+    lat+=(result&1)?~(result>>1):(result>>1);
+    result=0;shift=0;
+    do{b=str.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5}while(b>=0x20);
+    lon+=(result&1)?~(result>>1):(result>>1);
+    out.push([lon/1e6,lat/1e6])
+  }
+  return out
+}
+
+function zoneRings(list){
+  const rings=[];
+  for(const s of list){
+    try{
+      let z=zone(s);
+      z=turf.rewind(z,{reverse:false});
+      z=turf.simplify(z,{tolerance:0.00018,highQuality:false});
+      const g=z.geometry;
+      const addRing=r=>{
+        if(!r||r.length<4)return;
+        const clean=r.map(p=>[+p[0].toFixed(6),+p[1].toFixed(6)]);
+        const a=clean[0],b=clean[clean.length-1];
+        if(a[0]!==b[0]||a[1]!==b[1])clean.push([...a]);
+        rings.push(clean)
+      };
+      if(g.type==='Polygon')addRing(g.coordinates[0]);
+      else if(g.type==='MultiPolygon')g.coordinates.forEach(p=>addRing(p[0]))
+    }catch(e){console.warn('Could not build exclusion polygon for',s.name,e)}
+  }
+  return rings
+}
+
+function valhallaToRoute(data){
+  const trip=data?.trip;
+  if(!trip||!trip.legs?.length)throw Error(data?.error||data?.error_code||'Valhalla returned no route');
+  let coords=[],maneuvers=[];
+  for(const leg of trip.legs){
+    const c=decodePolyline6(leg.shape||'');
+    if(coords.length&&c.length&&coords[coords.length-1][0]===c[0][0]&&coords[coords.length-1][1]===c[0][1])c.shift();
+    coords.push(...c);
+    maneuvers.push(...(leg.maneuvers||[]))
+  }
+  return{
+    geometry:{type:'LineString',coordinates:coords},
+    duration:+trip.summary.time||0,
+    distance:(+trip.summary.length||0)*1609.344,
+    maneuvers,
+    provider:'Valhalla'
+  }
+}
+
+async function valhallaRoute(a,b,excluded=[],opts=routeOptions()){
+  const payload={
+    locations:[{lat:a.lat,lon:a.lon,type:'break'},{lat:b.lat,lon:b.lon,type:'break'}],
+    costing:'auto',
+    units:'miles',
+    language:'en-US',
+    directions_type:'instructions',
+    costing_options:{
+      auto:{
+        use_highways:opts.highways?0:1,
+        use_tolls:opts.tolls?0:1,
+        use_ferry:opts.ferries?0:1
+      }
+    }
+  };
+  const rings=zoneRings(excluded);
+  if(rings.length)payload.exclude_polygons=rings;
+
+  const data=await j('https://valhalla1.openstreetmap.de/route',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  },35000);
+  if(data?.error_code||data?.error)throw Error(data.error||data.error_code);
+  return valhallaToRoute(data)
+}
+
+function schoolKey(s){return s.id||((s.name||'school')+'|'+s.lat.toFixed(5)+'|'+s.lon.toFixed(5))}
+
+async function calculateAvoidingSchools(a,b,pre,opts){
+  if(!opts.schools){
+    if(opts.highways||opts.tolls||opts.ferries)return await valhallaRoute(a,b,[],opts);
+    return pre
+  }
+
+  let route=pre;
+  const excluded=new Map();
+  let known=new Map(schools.map(s=>[schoolKey(s),s]));
+
+  for(let pass=0;pass<5;pass++){
+    const blocking=hits(route);
+    if(!blocking.length)return route;
+
+    for(const s of blocking)excluded.set(schoolKey(s),s);
+    setProgress(70+pass*5,'Avoiding schools',
+      'Routing around '+excluded.size+' school exclusion zone'+(excluded.size===1?'':'s'));
+
+    try{
+      route=await valhallaRoute(a,b,[...excluded.values()],opts)
+    }catch(e){
+      console.warn('Valhalla exclusion routing failed; trying waypoint fallback',e);
+      route=await strict(a,b);
+      if(!route)throw Error('Routing engine could not find a road path outside the school zones.')
+    }
+
+    const more=await loadRelevantSchools(route);
+    for(const s of more)known.set(schoolKey(s),s);
+    schools=dedupeSchools([...known.values()]);
+    drawS()
+  }
+
+  if(hits(route).length)throw Error('No route found that stays outside all detected school exclusion zones.');
+  return route
+}
+
+function rb(r,p=2.5){
+  const c=r.geometry.coordinates;
+  let mnx=Infinity,mxx=-Infinity,mny=Infinity,mxy=-Infinity;
+  for(const v of c){mnx=Math.min(mnx,v[0]);mxx=Math.max(mxx,v[0]);mny=Math.min(mny,v[1]);mxy=Math.max(mxy,v[1])}
+  const mid=(mny+mxy)/2,dp=p/111,op=p/(111*Math.max(.2,Math.cos(mid*Math.PI/180)));
+  return[mny-dp,mnx-op,mxy+dp,mxx+op]
+}
+
+const ARC_PUBLIC_BOUNDS='https://services.arcgis.com/LBbVDC0hKPAnLRpO/arcgis/rest/services/gc_schoolsbnd_jul23/FeatureServer/0/query';
+const ARC_PUBLIC_POINTS='https://services1.arcgis.com/Ua5sjt3LWTPigjyD/arcgis/rest/services/Public_School_Locations_Current/FeatureServer/0/query';
+const ARC_PRIVATE_POINTS='https://services1.arcgis.com/Ua5sjt3LWTPigjyD/arcgis/rest/services/Private_School_Locations_Current/FeatureServer/0/query';
+const POINT_FALLBACK_M=457.2;
+
+async function arcQuery(endpoint,bounds,outFields='NAME'){
+  const [minLat,minLon,maxLat,maxLon]=bounds;
+  const q=new URLSearchParams({
+    where:'1=1',
+    geometry:`${minLon},${minLat},${maxLon},${maxLat}`,
+    geometryType:'esriGeometryEnvelope',
+    inSR:'4326',
+    spatialRel:'esriSpatialRelIntersects',
+    outFields,
+    returnGeometry:'true',
+    outSR:'4326',
+    f:'geojson'
+  });
+  return await j(endpoint+'?'+q.toString(),{},18000)
+}
+function normName(x){return String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function boundarySchools(fc){
+  const out=[];
+  for(const f of fc?.features||[]){
+    if(!f.geometry||!['Polygon','MultiPolygon'].includes(f.geometry.type))continue;
+    const pr=f.properties||{};
+    const hi=String(pr.HIGH_GRADE||'').toUpperCase();
+    const lo=String(pr.LOW_GRADE||'').toUpperCase();
+    if((hi==='N'||hi==='NA'||hi==='N/A')&&(lo==='N'||lo==='NA'||lo==='N/A'))continue;
+    try{
+      const c=turf.centroid(f).geometry.coordinates;
+      out.push({id:'flb:'+String(pr.FID||pr.STATE_ID||out.length),name:pr.NAME||'School',lat:c[1],lon:c[0],g:f,source:'Florida school grounds',radiusM:R})
+    }catch(_){}
+  }
+  return out
+}
+function pointSchools(fc,prefix,source){
+  const out=[];
+  for(const f of fc?.features||[]){
+    if(!f.geometry||f.geometry.type!=='Point')continue;
+    const [lon,lat]=f.geometry.coordinates||[];if(!Number.isFinite(lon)||!Number.isFinite(lat))continue;
+    const pr=f.properties||{};
+    out.push({id:prefix+':'+String(pr.OBJECTID||pr.NCESSCH||pr.PPINST||out.length),name:pr.NAME||'School',lat,lon,g:null,source,radiusM:POINT_FALLBACK_M})
+  }
+  return out
+}
+function dedupeSchools(items){
+  const bounds=items.filter(s=>s.g),points=items.filter(s=>!s.g),out=[...bounds];
+  for(const s of points){
+    let dup=false;const sn=normName(s.name);
+    for(const b of bounds){
+      const bn=normName(b.name);
+      if(sn&&bn&&sn===bn){dup=true;break}
+      try{const d=turf.distance(turf.point([s.lon,s.lat]),turf.point([b.lon,b.lat]),{units:'kilometers'});if(d<0.18){dup=true;break}}catch(_){}
+    }
+    if(!dup)out.push(s)
+  }
+  return out
+}
+async function loadRelevantSchools(route){
+  const b=rb(route,2.4);
+  const tasks=[
+    arcQuery(ARC_PUBLIC_BOUNDS,b,'FID,NAME,LOW_GRADE,HIGH_GRADE,STATE_ID'),
+    arcQuery(ARC_PUBLIC_POINTS,b,'OBJECTID,NAME'),
+    arcQuery(ARC_PRIVATE_POINTS,b,'OBJECTID,NAME')
+  ];
+  const res=await Promise.allSettled(tasks);
+  const ok=res.filter(x=>x.status==='fulfilled');
+  if(!ok.length)throw Error('School databases are temporarily unavailable.');
+  let all=[];
+  if(res[0].status==='fulfilled')all.push(...boundarySchools(res[0].value));
+  if(res[1].status==='fulfilled')all.push(...pointSchools(res[1].value,'pub','NCES public school point'));
+  if(res[2].status==='fulfilled')all.push(...pointSchools(res[2].value,'priv','NCES private school point'));
+  return dedupeSchools(all)
+}
+
+function zone(s){const src=s.g||turf.point([s.lon,s.lat]);const meters=s.g?R:(s.radiusM||POINT_FALLBACK_M);return turf.buffer(src,meters/1000,{units:'kilometers',steps:32})}
+function drawS(){
+  sl.clearLayers();
+  schools.forEach(s=>L.geoJSON(zone(s),{style:{color:'#b91c1c',weight:1,fillColor:'#ef4444',fillOpacity:.15}})
+    .bindPopup('<b>'+s.name+'</b><br>'+(s.g?'1,000 ft from mapped school grounds':'1,500 ft conservative point fallback')+'<br><small>'+s.source+'</small>').addTo(sl))
+}
+function hits(r){
+  const l=turf.lineString(r.geometry.coordinates);
+  return schools.filter(s=>{try{return turf.booleanIntersects(l,zone(s))}catch(_){return false}})
+}
+function det(s,a,b,o,dist){
+  const br=turf.bearing(turf.point([a.lon,a.lat]),turf.point([b.lon,b.lat]))+o;
+  const p=turf.destination(turf.point([s.lon,s.lat]),dist/1000,br,{units:'kilometers'}).geometry.coordinates;
+  return{lon:p[0],lat:p[1]}
+}
+async function strict(a,b){
+  let rs=await routes(a,b,true);
+  let clean=rs.filter(r=>!hits(r).length).sort((x,y)=>x.duration-y.duration);if(clean.length)return clean[0];
+  let best=rs.sort((x,y)=>hits(x).length-hits(y).length||x.duration-y.duration)[0],wps=[];
+  for(let pass=0;pass<4;pass++){
+    const h=hits(best);if(!h.length)return best;
+    const offsets=pass<2?[90,-90]:[125,-125];
+    const attempts=offsets.map(o=>{
+      const wp=det(h[0],a,b,o,700+pass*220);
+      return routes(a,b,false,[...wps,wp]).then(x=>({r:x[0],wp,n:hits(x[0]).length}));
+    });
+    const settled=await Promise.allSettled(attempts);
+    const cand=settled.filter(x=>x.status==='fulfilled').map(x=>x.value);
+    if(!cand.length)break;
+    cand.sort((x,y)=>x.n-y.n||x.r.duration-y.r.duration);best=cand[0].r;
+    if(cand[0].n<h.length)wps.push(cand[0].wp)
+  }
+  return hits(best).length?null:best
+}
+function drawR(r,a,b){
+  rl.clearLayers();ml.clearLayers();
+  const ll=r.geometry.coordinates.map(c=>[c[1],c[0]]);
+  L.polyline(ll,{color:'#111827',weight:6}).addTo(rl);
+  L.marker([a.lat,a.lon]).bindPopup('Start').addTo(ml);L.marker([b.lat,b.lon]).bindPopup('Destination').addTo(ml);
+  map.fitBounds(ll,{padding:[30,30]})
+}
+function fmtMiles(m){
+  const u=routeOptions().units;
+  const metric=u==='km'||(u==='auto'&&!/^en-US/i.test(navigator.language||'en-US'));
+  return metric?(m/1000).toFixed(1)+' km':(m/1609.344).toFixed(1)+' mi'
+}
+function fmtTime(sec){const m=Math.round(sec/60);return m<60?m+' min':Math.floor(m/60)+'h '+m%60+'m'}
+function eta(sec){return new Date(Date.now()+sec*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
+function openNav(){
+  if(!AR)return;
+  $('panel').style.display='none';$('summary').style.display='none';$('nav').style.display='block';
+  $('next').textContent='Follow highlighted route';$('nd').textContent='Press Start GPS for live position.';
+  $('eta').textContent=eta(AR.duration);$('remain').textContent=fmtMiles(AR.distance);$('traveltime').textContent=fmtTime(AR.duration)
+}
+
+$('go').onclick=async()=>{
+  const oq=$('o').value.trim(),dq=$('d').value.trim();
+  if(!oq||!dq)return stat('Enter both addresses.','warn');
+  $('go').disabled=true;$('summary').style.display='none';$('nav').style.display='none';
+  resetProgressColor();startProgress();
+  try{
+    setProgress(8,'Resolving addresses','Checking origin and destination');
+    const a=await resolve(oq,SO),b=await resolve(dq,SD);AD=b;
+
+    setProgress(20,'Calculating preliminary route','Finding the fastest normal route');
+    const pre=(await routes(a,b,true)).sort((x,y)=>x.duration-y.duration)[0];
+
+    setProgress(38,'Loading school databases','Florida school grounds + current NCES public/private schools');
+    schools=await loadRelevantSchools(pre);drawS();
+
+    setProgress(60,'Building exclusion zones',schools.length+' nearby schools loaded');
+
+    const opts=routeOptions();
+    setProgress(68,opts.schools?'Calculating Avoid Schools route':'Calculating route',
+      opts.schools?'School zones will be blocked inside the routing engine':'Applying selected route preferences');
+    let r=await calculateAvoidingSchools(a,b,pre,opts);
+
+    setProgress(91,'Final validation','Checking the selected road path against school zones');
+    const more=opts.schools?await loadRelevantSchools(r):[];
+    const m=new Map();
+    [...schools,...more].forEach(s=>m.set(schoolKey(s),s));
+    schools=dedupeSchools([...m.values()]);drawS();
+
+    if(opts.schools&&hits(r).length){
+      setProgress(94,'Final school reroute','New school zones were detected around the detour');
+      r=await calculateAvoidingSchools(a,b,r,opts);
+      if(hits(r).length)throw Error('Could not validate a route outside all detected school zones.')
+    }
+
+    setProgress(98,'Drawing route','Preparing navigation view');
+    AR=r;drawR(r,a,b);
+    $('sumMain').textContent=fmtTime(r.duration)+' · '+fmtMiles(r.distance);
+    $('sumSub').textContent=(routeOptions().schools?'Avoid Schools ON · ':'')+'validated against '+schools.length+' nearby school zone'+(schools.length===1?'':'s');
+    $('summary').style.display='block';
+    endProgress(true);stat('Route ready. Navigation view opened.','ok');
+
+    setTimeout(openNav,350);
+  }catch(e){
+    console.error(e);failProgress(e.message||String(e));stat('Could not calculate route: '+(e.message||String(e)),'warn')
+  }finally{$('go').disabled=false}
+};
+
+$('optBtn').onclick=()=>{$('optionsPanel').style.display=$('optionsPanel').style.display==='block'?'none':'block'};
+$('sw').onclick=()=>{let x=$('o').value;$('o').value=$('d').value;$('d').value=x;let q=SO;SO=SD;SD=q};
+$('navb').onclick=openNav;
+$('exit').onclick=()=>{
+  $('nav').style.display='none';$('panel').style.display='block';$('summary').style.display=AR?'block':'none';
+  if(W!==null){navigator.geolocation.clearWatch(W);W=null;$('gps').textContent='Start GPS'}
+};
+$('gps').onclick=()=>{
+  if(!navigator.geolocation)return stat('GPS unavailable in this browser.','warn');
+  if(W!==null)return;
+  $('gps').textContent='GPS Active';
+  W=navigator.geolocation.watchPosition(p=>{
+    const a=p.coords.latitude,b=p.coords.longitude;gl.clearLayers();
+    L.circleMarker([a,b],{radius:8,color:'#1d4ed8',fillColor:'#3b82f6',fillOpacity:1,weight:3}).addTo(gl);
+    map.setView([a,b],Math.max(map.getZoom(),16))
+  },e=>{stat('GPS error: '+e.message,'warn');$('gps').textContent='Start GPS';W=null},{enableHighAccuracy:true,maximumAge:2000,timeout:15000})
+};
 </script>
 </body>
 </html>
