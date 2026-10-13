@@ -1,0 +1,21 @@
+name: PsychologyLawNative
+options:
+  bundleIdPrefix: com.simulapro
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+targets:
+  PsychologyLawNative:
+    type: application
+    platform: iOS
+    sources:
+      - PsychologyLawNativeApp.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.simulapro.psychologylaw
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Psychology Law
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGNING_ALLOWED: NO
