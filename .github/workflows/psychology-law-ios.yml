@@ -1,0 +1,48 @@
+name: Psychology Law Native - iPhone Simulator
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - 'psychology-law-ios/**'
+      - '.github/workflows/psychology-law-ios.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Xcode project
+        run: |
+          brew install xcodegen
+          cd psychology-law-ios
+          xcodegen generate
+      - name: Build native iOS app
+        run: |
+          set -o pipefail
+          cd psychology-law-ios
+          xcodebuild -project PsychologyLawNative.xcodeproj -scheme PsychologyLawNative -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/native-build" CODE_SIGNING_ALLOWED=NO build | tee "$RUNNER_TEMP/build.log"
+      - name: Launch in iPhone simulator
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp "$RUNNER_TEMP/build.log" artifacts/xcodebuild.log
+          APP="$RUNNER_TEMP/native-build/Build/Products/Debug-iphonesimulator/PsychologyLawNative.app"
+          test -d "$APP"
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/devices.json"
+          UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(next(x["udid"] for v in d["devices"].values() for x in v if x.get("isAvailable") and "iPhone" in x["name"]))' "$RUNNER_TEMP/devices.json")
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.simulapro.psychologylaw
+          sleep 8
+          xcrun simctl io "$UDID" screenshot artifacts/iphone-simulator.png
+          ditto -c -k --sequesterRsrc --keepParent "$APP" artifacts/PsychologyLawNative-Simulator.app.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: PsychologyLaw-iPhone-Simulator
+          path: artifacts/
+          if-no-files-found: warn
