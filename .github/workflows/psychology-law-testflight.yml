@@ -1,0 +1,82 @@
+name: Psychology Law - TestFlight (manual and protected)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "iOS app version (e.g. 1.0.0)"
+        default: "1.0.0"
+        required: true
+        type: string
+      release_confirm:
+        description: "After reviewing complete app, type FULL_BUILD_APPROVED"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: psychology-law-testflight
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get native SwiftUI app branch
+        uses: actions/checkout@v4
+        with:
+          ref: psychology-law-ios-native
+          persist-credentials: false
+      - name: Block pilot, check complete bank and app icon
+        env:
+          RELEASE_CONFIRM: ${{ inputs.release_confirm }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: python3 psychology-law-ios/ci/release_preflight.py
+
+  sign-and-upload:
+    needs: readiness
+    runs-on: macos-26
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: psychology-law-ios-native
+          persist-credentials: false
+      - name: Verify Apple credentials configured
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_TEAM_ID: ${{ vars.APPSTORE_TEAM_ID }}
+          APPSTORE_BUNDLE_ID: ${{ vars.APPSTORE_BUNDLE_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for v in APPSTORE_API_KEY_ID APPSTORE_ISSUER_ID APPSTORE_TEAM_ID APPSTORE_BUNDLE_ID APPSTORE_API_PRIVATE_KEY; do
+            if [[ -z "${!v:-}" ]]; then
+              echo "::error::Missing GitHub secret or variable: $v"
+              exit 1
+            fi
+          done
+          if [[ "$APPSTORE_BUNDLE_ID" != com.*.* ]]; then
+            echo "::error::APPSTORE_BUNDLE_ID must be a registered reverse-DNS bundle ID"
+            exit 1
+          fi
+          echo "Apple variables and secret present (values are not printed)."
+      - name: Prepare build tools
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          gem install fastlane --no-document
+      - name: Archive, sign and upload to TestFlight
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_TEAM_ID: ${{ vars.APPSTORE_TEAM_ID }}
+          APPSTORE_BUNDLE_ID: ${{ vars.APPSTORE_BUNDLE_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          RELEASE_VERSION: ${{ inputs.release_version }}
+        run: bash psychology-law-ios/ci/upload_testflight.sh
