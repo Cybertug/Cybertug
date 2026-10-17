@@ -47,6 +47,14 @@ ARCHIVE="$WORK/PsychologyLawNative.xcarchive"
 EXPORT="$WORK/export"
 mkdir -p "$EXPORT"
 
+# Apple requires a new build number for each upload of the same version.
+BUILD_NUMBER="${RELEASE_BUILD_NUMBER:-$(( ${GITHUB_RUN_NUMBER:-1} + ${GITHUB_RUN_ATTEMPT:-1} - 1 ))}"
+if [[ ! "$BUILD_NUMBER" =~ ^[1-9][0-9]{0,3}$ ]]; then
+  echo "::error::RELEASE_BUILD_NUMBER must be a positive integer with at most four digits"
+  exit 1
+fi
+echo "Release build number: $BUILD_NUMBER"
+
 echo "Archiving native app; exporting with distribution signing next..."
 xcodebuild -project PsychologyLawNative.xcodeproj \
  -scheme PsychologyLawNative -configuration Release \
@@ -60,7 +68,7 @@ xcodebuild -project PsychologyLawNative.xcodeproj \
  DEVELOPMENT_TEAM="$APPSTORE_TEAM_ID" \
  PRODUCT_BUNDLE_IDENTIFIER="$APPSTORE_BUNDLE_ID" \
  MARKETING_VERSION="$RELEASE_VERSION" \
- CURRENT_PROJECT_VERSION="$(( ${GITHUB_RUN_NUMBER:-1} + ${GITHUB_RUN_ATTEMPT:-1} - 1 ))" \
+ CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
  archive > "$WORK/archive.log" 2>&1 || {
     tail -n 80 "$WORK/archive.log"
     exit 1
