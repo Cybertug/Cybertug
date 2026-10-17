@@ -9,6 +9,22 @@ umask 077
 : "${APPSTORE_API_PRIVATE_KEY:?missing API private key}"
 : "${RELEASE_VERSION:?missing release version}"
 
+# Apple's October 2026 App Store upload requirement is iOS 26 SDK or newer.
+# macos-15 GitHub runners still default to Xcode 16.4 even though Xcode 26 is installed.
+for xc in /Applications/Xcode_26.3.app /Applications/Xcode_26.2.app /Applications/Xcode_26.1.1.app /Applications/Xcode_26.0.1.app; do
+  if [[ -d "$xc/Contents/Developer" ]]; then
+    export DEVELOPER_DIR="$xc/Contents/Developer"
+    break
+  fi
+done
+echo "Selected Xcode: $(xcodebuild -version | head -1)"
+SDK_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+if [[ "${SDK_VERSION%%.*}" -lt 26 ]]; then
+  echo "::error::iOS 26+ SDK required for App Store Connect, found $SDK_VERSION"
+  exit 1
+fi
+echo "iOS SDK: $SDK_VERSION"
+
 WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/psychologylaw-apple.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 P8="$WORK/AuthKey_$APPSTORE_API_KEY_ID.p8"
