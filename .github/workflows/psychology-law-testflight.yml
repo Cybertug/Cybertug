@@ -37,7 +37,7 @@ jobs:
 
   sign-and-upload:
     needs: readiness
-    runs-on: macos-26
+    runs-on: macos-15
     timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
@@ -64,12 +64,23 @@ jobs:
             echo "::error::APPSTORE_BUNDLE_ID must be a registered reverse-DNS bundle ID"
             exit 1
           fi
-          echo "Apple variables and secret present (values are not printed)."
+          if [[ "$APPSTORE_ISSUER_ID" == "$APPSTORE_API_KEY_ID" ]]; then
+            echo "::error::Issuer ID and Key ID are different; do not use the same value"
+            exit 1
+          fi
+          if [[ ! "$APPSTORE_ISSUER_ID" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]; then
+            echo "::error::Issuer ID must be an Apple UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
+            exit 1
+          fi
+          if [[ "$APPSTORE_API_PRIVATE_KEY" != *"BEGIN PRIVATE KEY"* ]]; then
+            echo "::error::The GitHub secret must contain the full contents of the downloaded Apple .p8 file"
+            exit 1
+          fi
+          echo "Apple configuration shape validated; certificates and signing are checked in the next step."
       - name: Prepare build tools
         run: |
           set -euo pipefail
           xcodebuild -version
-          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
           gem install fastlane --no-document
       - name: Archive, sign and upload to TestFlight
         env:
