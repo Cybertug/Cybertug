@@ -31,7 +31,7 @@ ARCHIVE="$WORK/PsychologyLawNative.xcarchive"
 EXPORT="$WORK/export"
 mkdir -p "$EXPORT"
 
-echo "Archiving signed native app..."
+echo "Archiving native app; exporting with distribution signing next..."
 xcodebuild -project PsychologyLawNative.xcodeproj \
  -scheme PsychologyLawNative -configuration Release \
  -sdk iphoneos -destination 'generic/platform=iOS' \
@@ -40,8 +40,7 @@ xcodebuild -project PsychologyLawNative.xcodeproj \
  -authenticationKeyPath "$P8" \
  -authenticationKeyID "$APPSTORE_API_KEY_ID" \
  -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
- CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
- CODE_SIGN_IDENTITY="Apple Distribution" \
+ CODE_SIGNING_ALLOWED=NO \
  DEVELOPMENT_TEAM="$APPSTORE_TEAM_ID" \
  PRODUCT_BUNDLE_IDENTIFIER="$APPSTORE_BUNDLE_ID" \
  MARKETING_VERSION="$RELEASE_VERSION" \
@@ -56,6 +55,7 @@ with open(sys.argv[1],"wb") as f:
     plistlib.dump({"method":"app-store-connect",
                    "destination":"export",
                    "signingStyle":"automatic",
+                   "signingCertificate":"Apple Distribution",
                    "teamID":os.environ["APPSTORE_TEAM_ID"],
                    "manageAppVersionAndBuildNumber":False},f)
 PY
