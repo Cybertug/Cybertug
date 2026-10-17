@@ -1,0 +1,25 @@
+name: Aixa - Internal TestFlight Access
+
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/grant-aixa-testflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  grant:
+    runs-on: macos-15
+    timeout-minutes: 10
+    env:
+      APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+      APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+    steps:
+      - name: Get authorized repo branch
+        uses: actions/checkout@v4
+      - name: Give Aixa internal TestFlight access via Apple API
+        run: ruby psychology-law-ios/ci/grant_aixa_internal_testflight.rb
