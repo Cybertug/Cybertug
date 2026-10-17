@@ -1,5 +1,5 @@
 name: Enable Build 5 for Internal TestFlight
-# Check whether TestFlight automatically distributes processed builds.
+# Complete build export compliance and wait for automatic TestFlight distribution.
 
 on:
   push:
