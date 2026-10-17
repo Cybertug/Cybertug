@@ -33,8 +33,28 @@ jobs:
               print(item + ": " + ("MISSING" if item in missing else "CONFIGURED"))
           if missing:
               sys.exit("Incomplete Apple configuration: " + ", ".join(missing))
-          if "BEGIN PRIVATE KEY" not in os.environ["APPSTORE_API_PRIVATE_KEY"]:
-              sys.exit("Private key secret is configured but does not look like a valid .p8 PEM file")
+          # Diagnostic output never contains key content, fragments, hashes, or length.
+          import base64
+          secret = os.environ["APPSTORE_API_PRIVATE_KEY"].strip()
+          has_pem_header = "-----BEGIN PRIVATE KEY-----" in secret
+          has_pem_footer = "-----END PRIVATE KEY-----" in secret
+          if not (has_pem_header and has_pem_footer):
+              classification = "unrecognized"
+              try:
+                  decoded = base64.b64decode(secret, validate=True).decode("utf-8")
+                  if "-----BEGIN PRIVATE KEY-----" in decoded and "-----END PRIVATE KEY-----" in decoded:
+                      classification = "base64_encoded_pem"
+              except Exception:
+                  pass
+              if classification == "unrecognized" and "\\\\n" in secret and "BEGIN PRIVATE KEY" in secret:
+                  classification = "literal_backslash_n"
+              elif classification == "unrecognized" and "BEGIN PRIVATE KEY" in secret:
+                  classification = "pem_partial_or_malformed"
+              elif classification == "unrecognized" and ("AuthKey_" in secret or secret.lower().endswith(".p8")):
+                  classification = "file_name_or_path"
+              print("Private key format: " + classification)
+              sys.exit("Private key secret is present, but PEM begin/end markers were not both found")
+          print("Private key format: complete_pem")
           if os.environ["APPSTORE_BUNDLE_ID"] != "com.simulapro.psychologylaw":
               sys.exit("Bundle ID variable doesn't match the native app")
           print("All expected Apple names are configured. Signing permissions are not tested here.")
