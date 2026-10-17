@@ -1,5 +1,5 @@
 name: Enable Build 5 for Internal TestFlight
-# Diagnostic retry if Apple reports validation error.
+# Check whether TestFlight automatically distributes processed builds.
 
 on:
   push:
