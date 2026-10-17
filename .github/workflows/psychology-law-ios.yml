@@ -1,35 +1,54 @@
-name: Psychology Law Native - iPhone Simulator
+name: Psychology Law Native - Full 325Q iPhone Simulator
+
 on:
   push:
     branches: [psychology-law-ios-native]
     paths:
-      - 'psychology-law-ios/**'
+      - 'psychology-law-ios/full-project/**'
       - '.github/workflows/psychology-law-ios.yml'
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   simulator:
     runs-on: macos-15
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare Xcode project
+      - name: Check 325-question native package
+        shell: bash
         run: |
-          brew install xcodegen
-          cd psychology-law-ios
-          xcodegen generate
-      - name: Build native iOS app
-        run: |
-          set -o pipefail
-          cd psychology-law-ios
-          xcodebuild -project PsychologyLawNative.xcodeproj -scheme PsychologyLawNative -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/native-build" CODE_SIGNING_ALLOWED=NO build | tee "$RUNNER_TEMP/build.log"
-      - name: Launch in iPhone simulator
+          python3 - <<'PY'
+          import json, pathlib, collections, sys
+          b=pathlib.Path("psychology-law-ios/full-project/PsychologyLawNative/Resources/questions.json")
+          q=json.loads(b.read_text())
+          assert len(q)==325, f"Expected 325 questions, got {len(q)}"
+          assert len({a["id"] for a in q})==325, "Duplicate question IDs"
+          for a in q:
+            assert all(a.get(k) for k in ("id", "topic", "question", "options", "explanation", "source")), a
+            assert len(a["options"])==4 and 0<=a["correct"]<4, a["id"]
+          print("Question bank validated:",len(q), collections.Counter(x['topic'] for x in q))
+          PY
+      - name: Build complete SwiftUI app for iPhone Simulator
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts
-          cp "$RUNNER_TEMP/build.log" artifacts/xcodebuild.log
-          APP="$RUNNER_TEMP/native-build/Build/Products/Debug-iphonesimulator/PsychologyLawNative.app"
+          xcodebuild -version
+          xcodebuild -project psychology-law-ios/full-project/PsychologyLawNative.xcodeproj \
+            -scheme PsychologyLawNative -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/full-native-build" \
+            CODE_SIGNING_ALLOWED=NO build > artifacts/build.log 2>&1 || {
+              tail -n 130 artifacts/build.log
+              exit 1
+            }
+      - name: Run complete native app on an iPhone Simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/full-native-build/Build/Products/Debug-iphonesimulator/PsychologyLawNative.app"
           test -d "$APP"
           xcrun simctl list devices available -j > "$RUNNER_TEMP/devices.json"
           UDID=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(next(x["udid"] for v in d["devices"].values() for x in v if x.get("isAvailable") and "iPhone" in x["name"]))' "$RUNNER_TEMP/devices.json")
@@ -37,12 +56,13 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch "$UDID" com.simulapro.psychologylaw
-          sleep 8
-          xcrun simctl io "$UDID" screenshot artifacts/iphone-simulator.png
-          ditto -c -k --sequesterRsrc --keepParent "$APP" artifacts/PsychologyLawNative-Simulator.app.zip
-      - uses: actions/upload-artifact@v4
+          sleep 10
+          xcrun simctl io "$UDID" screenshot artifacts/iphone-full-native.png
+          ditto -c -k --sequesterRsrc --keepParent "$APP" artifacts/PsychologyLawNative-Full325-Simulator.app.zip
+      - name: Upload full app and screenshot
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: PsychologyLaw-iPhone-Simulator
+          name: PsychologyLaw-Full325-iPhone-Simulator
           path: artifacts/
           if-no-files-found: warn
