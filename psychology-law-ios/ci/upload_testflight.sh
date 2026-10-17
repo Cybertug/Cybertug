@@ -41,6 +41,7 @@ xcodebuild -project PsychologyLawNative.xcodeproj \
  -authenticationKeyID "$APPSTORE_API_KEY_ID" \
  -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
  CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Automatic \
+ CODE_SIGN_IDENTITY="Apple Distribution" \
  DEVELOPMENT_TEAM="$APPSTORE_TEAM_ID" \
  PRODUCT_BUNDLE_IDENTIFIER="$APPSTORE_BUNDLE_ID" \
  MARKETING_VERSION="$RELEASE_VERSION" \
