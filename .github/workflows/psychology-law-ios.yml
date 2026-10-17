@@ -31,6 +31,27 @@ jobs:
             assert len(a["options"])==4 and 0<=a["correct"]<4, a["id"]
           print("Question bank validated:",len(q), collections.Counter(x['topic'] for x in q))
           PY
+      - name: Test exam creation and closed-app reset behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="psychology-law-ios/full-project"
+          swiftc "$SOURCE/PsychologyLawNative/ExamModels.swift" \
+                 "$SOURCE/PsychologyLawNative/ExamEngine.swift" \
+                 "$SOURCE/Tests/ExamEngineTests.swift" \
+                 -o "$RUNNER_TEMP/psychology-core-tests"
+          "$RUNNER_TEMP/psychology-core-tests" "$SOURCE/PsychologyLawNative/Resources/questions.json"
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("psychology-law-ios/full-project/PsychologyLawNative")
+          view = (p / "ExamRootView.swift").read_text()
+          store = (p / "ExamStore.swift").read_text()
+          assert "case .background:" in view and "store.resetForExit()" in view
+          assert "func resetForExit()" in store
+          assert "UserDefaults.standard.removeObject(forKey: snapshotKey)" in store
+          assert "snapshot = saved" not in store
+          print("PASS: background reset and no resume on cold launch.")
+          PY
       - name: Build complete SwiftUI app for iPhone Simulator
         shell: bash
         run: |
