@@ -34,7 +34,7 @@ TOKEN = "#{prefix}.#{base64url(raw_sig)}"
 
 def call_api(method, path, body=nil)
   uri = URI("#{API}#{path}")
-  req_class = {'GET'=>Net::HTTP::Get, 'POST'=>Net::HTTP::Post}.fetch(method)
+  req_class = {'GET'=>Net::HTTP::Get, 'POST'=>Net::HTTP::Post, 'PATCH'=>Net::HTTP::Patch}.fetch(method)
   req = req_class.new(uri)
   req['Authorization'] = "Bearer #{TOKEN}"
   req['Accept'] = 'application/json'
@@ -74,15 +74,37 @@ end
 abort "Build #{EXPECTED_BUILD} is not VALID yet; retry once Apple finishes processing" unless target
 
 details = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data']
+if details.dig('attributes','internalBuildState') == 'MISSING_EXPORT_COMPLIANCE'
+  encryption_flag = target.dig('attributes','usesNonExemptEncryption')
+  abort 'Build reports non-exempt encryption; cannot declare exemption automatically' if encryption_flag == true
+  # App contains original SwiftUI educational practice content, no custom cryptography.
+  # Same "none of the algorithms" exemption selected for the original build.
+  call_api('PATCH', "/v1/builds/#{target.fetch('id')}", {
+    data: {type: 'builds', id: target.fetch('id'), attributes: {usesNonExemptEncryption: false}}
+  })
+  puts "Saved export-compliance exemption for Build #{EXPECTED_BUILD}."
+  details = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data']
+end
 group_data = call_api('GET', "/v1/betaGroups/#{group_id}")['data']
 puts "Build #{EXPECTED_BUILD}: audience=#{target.dig('attributes','buildAudienceType')}, processing=#{target.dig('attributes','processingState')}, internalBetaState=#{details.dig('attributes','internalBuildState')}"
 puts "Internal group automatic distribution=#{group_data.dig('attributes','hasAccessToAllBuilds')}"
 existing = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
 puts "Internal group linked builds=#{existing.map { |b| b.dig('attributes','version') }.join(', ')}"
 if group_data.dig('attributes','hasAccessToAllBuilds') == true
-  puts 'Automatic distribution enabled: Apple assigns processed builds; direct manual POST is not allowed.'
+  puts 'Automatic internal distribution is enabled; waiting for Apple to assign the build.'
+  18.times do |attempt|
+    current = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
+    break if current.any? { |b| b['id'] == target.fetch('id') }
+    state = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data'].dig('attributes','internalBuildState')
+    puts "Build #{EXPECTED_BUILD} internal state=#{state}; assignment pending #{attempt+1}/18"
+    sleep 10 if attempt < 17
+  end
+  current = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
+  abort 'Apple has not made Build 5 available to automatic group yet' unless current.any? { |b| b['id'] == target.fetch('id') }
   testers = call_api('GET', "/v1/betaGroups/#{group_id}/betaTesters?limit=200")['data']
-  puts "INTERNAL GROUP CHECK: #{testers.length} tester(s); Build #{EXPECTED_BUILD} beta state #{details.dig('attributes','internalBuildState')}."
+  abort 'Internal group unexpectedly has fewer than 2 testers' if testers.length < 2
+  state = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data'].dig('attributes','internalBuildState')
+  puts "SUCCESS: iOS Build #{EXPECTED_BUILD} available in automatic internal group (#{testers.length} testers, state=#{state})."
   exit 0
 end
 unless existing.any? { |b| b['id'] == target.fetch('id') }
