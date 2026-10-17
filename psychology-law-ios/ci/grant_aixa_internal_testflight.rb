@@ -75,11 +75,13 @@ end
 groups = request('GET', '/v1/betaGroups?limit=200')['data']
 matching = groups.select do |g|
   g.dig('attributes', 'name') == GROUP_NAME &&
-    g.dig('attributes', 'isInternalGroup') == true &&
-    g.dig('relationships', 'app', 'data', 'id') == APP_ID
+    g.dig('attributes', 'isInternalGroup') == true
 end
 abort "Internal group not uniquely identified (#{matching.size} matches)" unless matching.size == 1
 group_id = matching.first.fetch('id')
+# Apple may return only a relationship link (not app linkage data) in group listings.
+group_app = request('GET', "/v1/betaGroups/#{group_id}/app")['data']
+abort 'Tester group belongs to another app' unless group_app && group_app['id'] == APP_ID
 
 # Ensure the latest usable build belongs to this internal group.
 builds = request('GET', "/v1/builds?filter%5Bapp%5D=#{APP_ID}&limit=200")['data']
