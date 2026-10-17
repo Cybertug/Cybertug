@@ -1,0 +1,41 @@
+name: Psychology Law - Check Apple TestFlight Configuration
+
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/psychology-law-apple-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-configuration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required names exist without revealing private values
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_TEAM_ID: ${{ vars.APPSTORE_TEAM_ID }}
+          APPSTORE_BUNDLE_ID: ${{ vars.APPSTORE_BUNDLE_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, sys
+          required = ["APPSTORE_API_KEY_ID", "APPSTORE_ISSUER_ID", "APPSTORE_TEAM_ID",
+                      "APPSTORE_BUNDLE_ID", "APPSTORE_API_PRIVATE_KEY"]
+          missing = [x for x in required if not os.environ.get(x, "").strip()]
+          for item in required:
+              print(item + ": " + ("MISSING" if item in missing else "CONFIGURED"))
+          if missing:
+              sys.exit("Incomplete Apple configuration: " + ", ".join(missing))
+          if "BEGIN PRIVATE KEY" not in os.environ["APPSTORE_API_PRIVATE_KEY"]:
+              sys.exit("Private key secret is configured but does not look like a valid .p8 PEM file")
+          if os.environ["APPSTORE_BUNDLE_ID"] != "com.simulapro.psychologylaw":
+              sys.exit("Bundle ID variable doesn't match the native app")
+          print("All expected Apple names are configured. Signing permissions are not tested here.")
+          PY
