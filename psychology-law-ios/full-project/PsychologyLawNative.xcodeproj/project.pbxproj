@@ -1,0 +1,132 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 56;
+	objects = {
+/* Begin PBXBuildFile section */
+		B10000000000000000000001 /* PsychologyLawApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* PsychologyLawApp.swift */; };
+		B10000000000000000000002 /* ExamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* ExamModels.swift */; };
+		B10000000000000000000003 /* ExamEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* ExamEngine.swift */; };
+		B10000000000000000000004 /* ExamStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* ExamStore.swift */; };
+		B10000000000000000000005 /* PearsonUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* PearsonUI.swift */; };
+		B10000000000000000000006 /* ExamRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* ExamRootView.swift */; };
+		B20000000000000000000001 /* questions.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* questions.json */; };
+		B20000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000001 /* PsychologyLawApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PsychologyLawApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* ExamModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* ExamEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamEngine.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* ExamStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* PearsonUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PearsonUI.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* ExamRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamRootView.swift; sourceTree = "<group>"; };
+		A20000000000000000000001 /* questions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = questions.json; sourceTree = "<group>"; };
+		A20000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C10000000000000000000007 /* PsychologyLawNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PsychologyLawNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C1000000000000000000000A /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C10000000000000000000002 /* Root */ = {isa = PBXGroup; children = (C10000000000000000000003 /* PsychologyLawNative */, C10000000000000000000005 /* Products */); sourceTree = "<group>"; };
+		C10000000000000000000003 /* PsychologyLawNative */ = {isa = PBXGroup; children = (A10000000000000000000001 /* PsychologyLawApp.swift */, A10000000000000000000002 /* ExamModels.swift */, A10000000000000000000003 /* ExamEngine.swift */, A10000000000000000000004 /* ExamStore.swift */, A10000000000000000000005 /* PearsonUI.swift */, A10000000000000000000006 /* ExamRootView.swift */, C10000000000000000000004 /* Resources */, A20000000000000000000002 /* Assets.xcassets */); path = PsychologyLawNative; sourceTree = "<group>"; };
+		C10000000000000000000004 /* Resources */ = {isa = PBXGroup; children = (A20000000000000000000001 /* questions.json */); path = Resources; sourceTree = "<group>"; };
+		C10000000000000000000005 /* Products */ = {isa = PBXGroup; children = (C10000000000000000000007 /* PsychologyLawNative.app */); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C10000000000000000000006 /* PsychologyLawNative */ = {isa = PBXNativeTarget; buildConfigurationList = C1000000000000000000000C /* Build configuration list for PBXNativeTarget */; buildPhases = (C10000000000000000000008 /* src_phase */, C1000000000000000000000A /* frameworks_phase */, C10000000000000000000009 /* res_phase */); buildRules = (); dependencies = (); name = PsychologyLawNative; productName = PsychologyLawNative; productReference = C10000000000000000000007 /* PsychologyLawNative.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C10000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = { BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 1500; TargetAttributes = { C10000000000000000000006 = { CreatedOnToolsVersion = 15.0; }; }; }; buildConfigurationList = C1000000000000000000000B /* Build configuration list for PBXProject */; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = C10000000000000000000002; productRefGroup = C10000000000000000000005 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (C10000000000000000000006 /* PsychologyLawNative */); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C10000000000000000000009 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (B20000000000000000000001 /* questions.json in Resources */, B20000000000000000000002 /* Assets.xcassets in Resources */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C10000000000000000000008 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000001 /* PsychologyLawApp.swift in Sources */, B10000000000000000000002 /* ExamModels.swift in Sources */, B10000000000000000000003 /* ExamEngine.swift in Sources */, B10000000000000000000004 /* ExamStore.swift in Sources */, B10000000000000000000005 /* PearsonUI.swift in Sources */, B10000000000000000000006 /* ExamRootView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		D10000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ENABLE_MODULES = YES;
+                DEBUG_INFORMATION_FORMAT = dwarf;
+                ENABLE_TESTABILITY = YES;
+                GCC_OPTIMIZATION_LEVEL = 0;
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                SDKROOT = iphoneos;
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+                SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1";
+            }; name = Debug; };
+		D10000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ENABLE_MODULES = YES;
+                DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                SDKROOT = iphoneos;
+                SWIFT_COMPILATION_MODE = wholemodule;
+                SWIFT_OPTIMIZATION_LEVEL = "-O";
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1";
+            }; name = Release; };
+		D10000000000000000000003 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {
+                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 1;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_CFBundleDisplayName = "Psychology Law";
+                INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+                INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+                INFOPLIST_KEY_UIRequiresFullScreen = YES;
+                INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+                MARKETING_VERSION = 1.0.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.simulapro.psychologylaw;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = iphoneos;
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = 1;
+}; name = Debug; };
+		D10000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {
+                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 1;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_CFBundleDisplayName = "Psychology Law";
+                INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+                INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+                INFOPLIST_KEY_UIRequiresFullScreen = YES;
+                INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+                IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+                LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+                MARKETING_VERSION = 1.0.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.simulapro.psychologylaw;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SDKROOT = iphoneos;
+                SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = 1;
+}; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C1000000000000000000000B /* Project configurations */ = {isa = XCConfigurationList; buildConfigurations = (D10000000000000000000001, D10000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		C1000000000000000000000C /* Target configurations */ = {isa = XCConfigurationList; buildConfigurations = (D10000000000000000000003, D10000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = C10000000000000000000001 /* Project object */;
+}
