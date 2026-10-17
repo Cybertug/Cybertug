@@ -73,7 +73,18 @@ target = nil
 end
 abort "Build #{EXPECTED_BUILD} is not VALID yet; retry once Apple finishes processing" unless target
 
+details = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data']
+group_data = call_api('GET', "/v1/betaGroups/#{group_id}")['data']
+puts "Build #{EXPECTED_BUILD}: audience=#{target.dig('attributes','buildAudienceType')}, processing=#{target.dig('attributes','processingState')}, internalBetaState=#{details.dig('attributes','internalBuildState')}"
+puts "Internal group automatic distribution=#{group_data.dig('attributes','hasAccessToAllBuilds')}"
 existing = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
+puts "Internal group linked builds=#{existing.map { |b| b.dig('attributes','version') }.join(', ')}"
+if group_data.dig('attributes','hasAccessToAllBuilds') == true
+  puts 'Automatic distribution enabled: Apple assigns processed builds; direct manual POST is not allowed.'
+  testers = call_api('GET', "/v1/betaGroups/#{group_id}/betaTesters?limit=200")['data']
+  puts "INTERNAL GROUP CHECK: #{testers.length} tester(s); Build #{EXPECTED_BUILD} beta state #{details.dig('attributes','internalBuildState')}."
+  exit 0
+end
 unless existing.any? { |b| b['id'] == target.fetch('id') }
   call_api('POST', "/v1/betaGroups/#{group_id}/relationships/builds", {
     data: [{type: 'builds', id: target.fetch('id')}]
