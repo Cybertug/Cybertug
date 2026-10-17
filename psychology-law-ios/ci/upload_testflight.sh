@@ -25,8 +25,8 @@ with open(sys.argv[2],"w") as f:
                "issuer_id":os.environ["APPSTORE_ISSUER_ID"],
                "key":pem,"in_house":False},f)
 PY
-cd psychology-law-ios
-xcodegen generate
+cd psychology-law-ios/full-project
+test -s PsychologyLawNative.xcodeproj/project.pbxproj
 ARCHIVE="$WORK/PsychologyLawNative.xcarchive"
 EXPORT="$WORK/export"
 mkdir -p "$EXPORT"
