@@ -44,7 +44,8 @@ def call_api(method, path, body=nil)
   unless [200,201,204].include?(response.code.to_i)
     errors = (JSON.parse(response.body.to_s)['errors'] rescue [])
     codes = Array(errors).map { |e| e['code'].to_s.gsub(/[^A-Za-z0-9_-]/, '') }.join(', ')
-    abort "Apple API #{method} #{uri.path}: HTTP #{response.code}, codes #{codes[0,100]}"
+    details = Array(errors).map { |e| e['detail'].to_s.gsub(/[\r\n]/, ' ').gsub(/[^\x20-\x7e]/, '') }.join('; ')
+    abort "Apple API #{method} #{uri.path}: HTTP #{response.code}, codes #{codes[0,100]}, detail #{details[0,350]}"
   end
   response.body.to_s.empty? ? {} : JSON.parse(response.body)
 end
