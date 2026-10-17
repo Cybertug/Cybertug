@@ -1,4 +1,5 @@
 name: Aixa - Internal TestFlight Access
+# Recheck group binding after Aixa's Marketing role was successfully set.
 
 on:
   push:
