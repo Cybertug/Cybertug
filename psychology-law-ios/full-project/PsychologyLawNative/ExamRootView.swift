@@ -65,16 +65,16 @@ struct ExamRootView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 4) {
             Text(stage == .tutorial ? "Tutorial - \(store.displayName)" : "Florida Laws & Rules Exam - \(store.displayName)")
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: PearsonStyle.textSize(11), weight: .bold))
                 .foregroundColor(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.82)
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 3) {
                 Text("◷ Time Remaining \(stage == .results ? "--:--" : store.clockText)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(.system(size: PearsonStyle.textSize(11), weight: .bold, design: .monospaced))
                 Text(counterLabel)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: PearsonStyle.textSize(10), weight: .medium))
             }
             .foregroundColor(.white)
             .fixedSize(horizontal: true, vertical: false)
@@ -112,7 +112,7 @@ struct ExamRootView: View {
             }
         }
         .buttonStyle(.plain)
-        .font(.system(size: 11, weight: .medium))
+        .font(.system(size: PearsonStyle.textSize(11), weight: .medium))
         .foregroundColor(.white)
         .padding(.horizontal, 10)
         .frame(height: 36)
@@ -185,7 +185,7 @@ struct ExamRootView: View {
             VStack(alignment: .leading, spacing: 15) {
                 let step = min(max(0, store.snapshot.tutorialIndex), 4)
                 Text(tutorialHeadings[step])
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: PearsonStyle.textSize(15), weight: .bold))
                     .frame(maxWidth: .infinity)
                     .padding(.top, 6)
                 switch step {
@@ -220,7 +220,7 @@ struct ExamRootView: View {
                 }
                 Spacer(minLength: 20)
             }
-            .font(.system(size: 13))
+            .font(.system(size: PearsonStyle.textSize(13)))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
         }
@@ -232,7 +232,7 @@ struct ExamRootView: View {
             if let item = store.currentItem {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(item.question)
-                        .font(.system(size: 15))
+                        .font(.system(size: PearsonStyle.textSize(15)))
                         .fixedSize(horizontal: false, vertical: true)
                     VStack(alignment: .leading, spacing: 7) {
                         ForEach(item.options.indices, id: \.self) { index in
@@ -242,7 +242,7 @@ struct ExamRootView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     PearsonRadio(isSelected: item.selectedIndex == index)
                                     Text(item.options[index])
-                                        .font(.system(size: 14))
+                                        .font(.system(size: PearsonStyle.textSize(14)))
                                         .foregroundColor(PearsonStyle.text)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .multilineTextAlignment(.leading)
@@ -278,14 +278,14 @@ struct ExamRootView: View {
         return ScrollView {
             VStack(spacing: 0) {
                 Text("Section Review")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: PearsonStyle.textSize(15), weight: .bold))
                     .padding(12)
                 PearsonSectionBand(title: "▣ Instructions")
                 VStack(alignment: .leading, spacing: 7) {
                     Text("Below is a summary of your answers. You may review all questions, incomplete questions or flagged questions.")
                     Text("Select any question number to return to that question. End Review submits your examination for scoring.")
                 }
-                .font(.system(size: 12))
+                .font(.system(size: PearsonStyle.textSize(12)))
                 .padding(11)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 PearsonSectionBand(title: "▣ Practice Exam Section", trailing: "\(store.questionCount) Questions · \(store.incompleteCount) Incomplete")
@@ -300,15 +300,15 @@ struct ExamRootView: View {
                         Button { store.goToQuestion(index) } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: item.isFlagged ? "flag.fill" : "flag")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: PearsonStyle.textSize(11)))
                                     .foregroundColor(PearsonStyle.blue)
                                 Text("\(index + 1)").fontWeight(.semibold)
                                 Spacer(minLength: 0)
                                 Text(item.selectedIndex == nil ? "Incomplete" : "Complete")
                                     .foregroundColor(item.selectedIndex == nil ? .red : .secondary)
-                                    .font(.system(size: 10))
+                                    .font(.system(size: PearsonStyle.textSize(10)))
                             }
-                            .font(.system(size: 11))
+                            .font(.system(size: PearsonStyle.textSize(11)))
                             .foregroundColor(PearsonStyle.text)
                             .padding(.horizontal, 6)
                             .frame(height: 42)
@@ -341,7 +341,7 @@ struct ExamRootView: View {
                 Text("\(score.correct) / \(score.scored)")
                     .font(.system(size: 24, weight: .bold))
                 Text("\(score.percentage)% on scored items · 32/40 required for PASS · \(score.unscored) unscored questions excluded")
-                    .font(.system(size: 12))
+                    .font(.system(size: PearsonStyle.textSize(12)))
                 if store.snapshot.didTimeExpire {
                     Text("Time expired; the examination was submitted automatically.")
                         .foregroundColor(.red)
@@ -349,14 +349,14 @@ struct ExamRootView: View {
                 PearsonSectionBand(title: store.snapshot.showAllAnswers ? "Review All Scored Questions" : "Review Incorrect and Unanswered Scored Questions")
                 if filtered.isEmpty {
                     Text("All scored questions answered correctly.")
-                        .font(.system(size: 13))
+                        .font(.system(size: PearsonStyle.textSize(13)))
                         .padding(.vertical, 8)
                 }
                 ForEach(filtered, id: \.self) { index in
                     let item = store.snapshot.items[index]
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Question \(index + 1): \(item.question)")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.system(size: PearsonStyle.textSize(13), weight: .bold))
                         HStack {
                             Text("Your answer:").bold()
                             Text(item.selectedIndex.map { item.options[$0] } ?? "Unanswered")
@@ -370,10 +370,10 @@ struct ExamRootView: View {
                         Text("Explanation:").bold()
                         Text(item.explanation)
                         Text("Legal source: \(item.source)")
-                            .font(.system(size: 11))
+                            .font(.system(size: PearsonStyle.textSize(11)))
                             .foregroundColor(.secondary)
                     }
-                    .font(.system(size: 12))
+                    .font(.system(size: PearsonStyle.textSize(12)))
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(red: 0.97, green: 0.985, blue: 1))
@@ -390,7 +390,7 @@ struct ExamRootView: View {
             Color.black.opacity(0.23).ignoresSafeArea().onTapGesture { panel = nil }
             VStack(spacing: 0) {
                 HStack {
-                    Text(active.title).font(.system(size: 13, weight: .bold))
+                    Text(active.title).font(.system(size: PearsonStyle.textSize(13), weight: .bold))
                     Spacer()
                     Button { panel = nil } label: { Image(systemName: "xmark") }
                         .accessibilityLabel("Close dialog")
@@ -458,7 +458,7 @@ struct ExamRootView: View {
                     get: { store.snapshot.scratchPad },
                     set: { store.setScratchPad($0) }
                 ))
-                .font(.system(size: 14))
+                .font(.system(size: PearsonStyle.textSize(14)))
                 .frame(height: 220)
                 .overlay(Rectangle().stroke(PearsonStyle.line))
                 .accessibilityIdentifier("scratchPadEditor")
@@ -475,14 +475,14 @@ struct ExamRootView: View {
                         } label: {
                             ZStack(alignment: .topTrailing) {
                                 Text("\(index + 1)")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.system(size: PearsonStyle.textSize(12), weight: .bold))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 40)
                                     .background(item.selectedIndex == nil ? Color.white : PearsonStyle.answered)
                                     .overlay(Rectangle().stroke(index == store.snapshot.currentIndex ? PearsonStyle.blue : PearsonStyle.line, lineWidth: index == store.snapshot.currentIndex ? 2 : 1))
                                 if item.isFlagged {
                                     Image(systemName: "flag.fill")
-                                        .font(.system(size: 8))
+                                        .font(.system(size: PearsonStyle.textSize(8)))
                                         .foregroundColor(.orange)
                                         .padding(3)
                                 }
@@ -492,7 +492,7 @@ struct ExamRootView: View {
                     }
                 }
                 Text("Blue = answered · flag = flagged · outline = current question")
-                    .font(.system(size: 11))
+                    .font(.system(size: PearsonStyle.textSize(11)))
                 Button("Section Review") {
                     store.openReview()
                     panel = nil
@@ -516,7 +516,7 @@ struct ExamRootView: View {
             Color.black.opacity(0.25).ignoresSafeArea()
             VStack(spacing: 14) {
                 Text("Unable to Start Exam").font(.headline)
-                Text(text).font(.system(size: 13))
+                Text(text).font(.system(size: PearsonStyle.textSize(13)))
                 Button("Close") { store.dismissError() }
                     .buttonStyle(.borderedProminent)
                     .tint(PearsonStyle.blue)
