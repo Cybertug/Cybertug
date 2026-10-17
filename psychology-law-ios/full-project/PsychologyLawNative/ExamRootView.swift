@@ -3,7 +3,6 @@ import SwiftUI
 enum SimulatorPanel: Equatable {
     case examInfo
     case help
-    case scratchPad
     case navigator
     case submit
 
@@ -11,9 +10,8 @@ enum SimulatorPanel: Equatable {
         switch self {
         case .examInfo: return "Exam Information"
         case .help: return "Help"
-        case .scratchPad: return "Scratch Pad"
         case .navigator: return "Navigator"
-        case .submit: return "Submit Exam"
+        case .submit: return "End Exam"
         }
     }
 }
@@ -63,31 +61,40 @@ struct ExamRootView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 4) {
-            Text(stage == .tutorial ? "Tutorial - \(store.displayName)" : "Florida Laws & Rules Exam - \(store.displayName)")
-                .font(.system(size: PearsonStyle.textSize(11), weight: .bold))
-                .foregroundColor(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-            Spacer(minLength: 4)
-            VStack(alignment: .trailing, spacing: 3) {
-                Text("◷ Time Remaining \(stage == .results ? "--:--" : store.clockText)")
-                    .font(.system(size: PearsonStyle.textSize(11), weight: .bold, design: .monospaced))
-                Text(counterLabel)
-                    .font(.system(size: PearsonStyle.textSize(10), weight: .medium))
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Florida Laws & Rules Examination Simulator")
+                    .font(.system(size: 16.5, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.92)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(store.displayName.uppercased())
+                    .font(.system(size: 14.5, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.88)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("Time Remaining").font(.system(size: 12, weight: .medium))
+                Text(stage == .results ? "--:--" : store.clockText)
+                    .font(.system(size: 17, weight: .bold, design: .monospaced))
+                Text(counterLabel).font(.system(size: 12.5, weight: .medium))
             }
             .foregroundColor(.white)
             .fixedSize(horizontal: true, vertical: false)
         }
-        .padding(.horizontal, 8)
-        .frame(height: 54)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .frame(minHeight: 104)
         .background(PearsonStyle.blue)
         .accessibilityElement(children: .combine)
     }
 
     private var counterLabel: String {
         switch stage {
-        case .tutorial: return "▣ \(store.snapshot.tutorialIndex + 1) of 5"
+        case .tutorial: return "▣ \(min(store.snapshot.tutorialIndex + 1, 4)) of 4"
         case .exam: return "▣ \(store.snapshot.currentIndex + 1) of \(store.questionCount)"
         case .review: return "▣ Section Review"
         case .results: return "▣ Score Report"
@@ -96,12 +103,7 @@ struct ExamRootView: View {
 
     private var toolbar: some View {
         HStack(spacing: 0) {
-            Button { panel = .scratchPad } label: {
-                Label("Scratch Pad", systemImage: "pencil.line")
-            }
-            .accessibilityIdentifier("scratchPadButton")
             Button { panel = .examInfo } label: { Text("Exam Info") }
-                .padding(.leading, 16)
             Spacer(minLength: 4)
             if stage == .exam {
                 Button { store.toggleFlag() } label: {
@@ -112,10 +114,10 @@ struct ExamRootView: View {
             }
         }
         .buttonStyle(.plain)
-        .font(.system(size: PearsonStyle.textSize(11), weight: .medium))
+        .font(.system(size: 14, weight: .semibold))
         .foregroundColor(.white)
-        .padding(.horizontal, 10)
-        .frame(height: 36)
+        .padding(.horizontal, 12)
+        .frame(height: 42)
         .background(PearsonStyle.toolbar)
     }
 
@@ -130,20 +132,31 @@ struct ExamRootView: View {
                     PearsonFooterButton(title: "◀ Previous", disabled: store.snapshot.tutorialIndex == 0) {
                         store.previousTutorial()
                     }
-                    PearsonFooterButton(title: store.snapshot.tutorialIndex == 4 ? "Begin Exam ▶" : "Next ▶") {
+                    PearsonFooterButton(title: store.snapshot.tutorialIndex >= 3 ? "Begin Exam ▶" : "Next ▶") {
                         store.nextTutorial()
                     }
                 }
             case .exam:
-                HStack(spacing: 0) {
-                    PearsonFooterButton(title: "Help") { panel = .help }
-                    Spacer(minLength: 0)
-                    PearsonFooterButton(title: "◀ Previous", disabled: store.snapshot.currentIndex == 0) {
-                        store.previousQuestion()
+                VStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        PearsonFooterButton(title: "Help") { panel = .help }
+                            .frame(maxWidth: .infinity)
+                        PearsonFooterButton(title: "Navigator") { panel = .navigator }
+                            .frame(maxWidth: .infinity)
+                        PearsonFooterButton(title: "End Exam") { panel = .submit }
+                            .frame(maxWidth: .infinity)
+                            .accessibilityIdentifier("endExamButton")
                     }
-                    PearsonFooterButton(title: "Navigator") { panel = .navigator }
-                    PearsonFooterButton(title: store.snapshot.currentIndex == store.questionCount - 1 ? "Review ▶" : "Next ▶") {
-                        store.nextQuestion()
+                    Rectangle().fill(Color.white.opacity(0.35)).frame(height: 1)
+                    HStack(spacing: 0) {
+                        PearsonFooterButton(title: "◀ Previous", disabled: store.snapshot.currentIndex == 0) {
+                            store.previousQuestion()
+                        }
+                        .frame(maxWidth: .infinity)
+                        PearsonFooterButton(title: store.snapshot.currentIndex == store.questionCount - 1 ? "Review ▶" : "Next ▶") {
+                            store.nextQuestion()
+                        }
+                        .frame(maxWidth: .infinity)
                     }
                 }
             case .review:
@@ -151,7 +164,7 @@ struct ExamRootView: View {
                     HStack(spacing: 0) {
                         PearsonFooterButton(title: "Return to Exam") { store.returnToExam() }
                         Spacer(minLength: 0)
-                        PearsonFooterButton(title: "End Review") { panel = .submit }
+                        PearsonFooterButton(title: "End Exam") { panel = .submit }
                     }
                     Rectangle().fill(Color.white.opacity(0.35)).frame(height: 1)
                     HStack(spacing: 0) {
@@ -176,14 +189,14 @@ struct ExamRootView: View {
     }
 
     private let tutorialHeadings = [
-        "Welcome to the Practice Exam Tutorial", "Scratch Pad", "Flag for Review",
+        "Welcome to the Practice Exam Tutorial", "Flag for Review",
         "Navigator and Section Review", "End of Tutorial"
     ]
 
     private var tutorialContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 15) {
-                let step = min(max(0, store.snapshot.tutorialIndex), 4)
+                let step = min(max(0, store.snapshot.tutorialIndex), 3)
                 Text(tutorialHeadings[step])
                     .font(.system(size: PearsonStyle.textSize(15), weight: .bold))
                     .frame(maxWidth: .infinity)
@@ -203,19 +216,16 @@ struct ExamRootView: View {
                     .accessibilityIdentifier("candidateNameField")
                     Text("Use the Previous and Next buttons at the bottom of the screen to navigate the tutorial.")
                 case 1:
-                    Text("The Scratch Pad allows you to type private notes during the examination. Notes are stored locally on the device and are not scored.")
-                    Text("Select Scratch Pad on the light-blue toolbar to try it now.")
-                case 2:
                     Text("Select Flag for Review to mark the current question for later review. A flag does not change your selected answer.")
                     Text("You can return to flagged questions at any point before submitting the examination.")
-                case 3:
+                case 2:
                     Text("Navigator shows the question numbers and indicates answered and flagged questions.")
-                    Text("Section Review allows you to select Review All, Review Incomplete or Review Flagged. End Review presents an in-app confirmation before scoring.")
+                    Text("Section Review allows you to select Review All, Review Incomplete or Review Flagged. End Exam presents a confirmation before scoring.")
                 default:
                     Text("This is the end of the practice-exam tutorial.")
                     Text("The exam has 45 questions, with 40 scored questions and 5 unscored practice questions.")
                     Text("You have 60 minutes to complete the exam. A score of at least 32 correct answers among the 40 scored questions is required for PASS.")
-                    Text("You will have access to Previous, Next, Flag for Review, Navigator and Scratch Pad. To finish early, open Section Review and select End Review.")
+                    Text("Use Previous, Next, Flag for Review, and Navigator to move through the exam. Select End Exam in the footer to finish early, then confirm your choice.")
                     Text("Select Begin Exam at the bottom right when you are ready.")
                 }
                 Spacer(minLength: 20)
@@ -232,7 +242,7 @@ struct ExamRootView: View {
             if let item = store.currentItem {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(item.question)
-                        .font(.system(size: PearsonStyle.textSize(15)))
+                        .font(.system(size: PearsonStyle.examTextSize(15)))
                         .fixedSize(horizontal: false, vertical: true)
                     VStack(alignment: .leading, spacing: 7) {
                         ForEach(item.options.indices, id: \.self) { index in
@@ -242,7 +252,7 @@ struct ExamRootView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     PearsonRadio(isSelected: item.selectedIndex == index)
                                     Text(item.options[index])
-                                        .font(.system(size: PearsonStyle.textSize(14)))
+                                        .font(.system(size: PearsonStyle.examTextSize(14)))
                                         .foregroundColor(PearsonStyle.text)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .multilineTextAlignment(.leading)
@@ -283,7 +293,7 @@ struct ExamRootView: View {
                 PearsonSectionBand(title: "▣ Instructions")
                 VStack(alignment: .leading, spacing: 7) {
                     Text("Below is a summary of your answers. You may review all questions, incomplete questions or flagged questions.")
-                    Text("Select any question number to return to that question. End Review submits your examination for scoring.")
+                    Text("Select any question number to return to that question. End Exam submits your examination for scoring after confirmation.")
                 }
                 .font(.system(size: PearsonStyle.textSize(12)))
                 .padding(11)
@@ -408,7 +418,7 @@ struct ExamRootView: View {
                     Spacer()
                     if active == .submit {
                         Button("Cancel") { panel = nil }
-                        Button("Submit Exam") {
+                        Button("End Exam") {
                             panel = nil
                             store.finishExam()
                         }
@@ -438,30 +448,18 @@ struct ExamRootView: View {
                 Text("45 questions · 40 scored · 5 unscored")
                 Text("Time limit: 60 minutes")
                 Text("Passing score: 32/40 (80%)")
-                Text("Use Previous, Next, Flag for Review, Navigator and Scratch Pad. All post-exam explanations are in English.")
+                Text("Use Previous, Next, Flag for Review, Navigator, and End Exam. All post-exam explanations are in English.")
                 Text("Independent practice software; not affiliated with Pearson VUE or the Florida Board of Psychology.")
                     .foregroundColor(.secondary)
             }
         case .help:
             VStack(alignment: .leading, spacing: 10) {
                 Text("Exam Controls").bold()
-                Text("Scratch Pad: takes notes locally on the device.")
                 Text("Flag for Review: marks the question for later review.")
                 Text("Navigator: opens a list of all questions; answered questions are shaded blue.")
                 Text("Previous / Next: moves between questions.")
+                Text("End Exam: opens a confirmation before scoring.")
                 Text("When the 60-minute timer expires, the exam is submitted automatically.")
-            }
-        case .scratchPad:
-            VStack(alignment: .leading, spacing: 7) {
-                Text("Use this space for notes. It is not scored.")
-                TextEditor(text: Binding(
-                    get: { store.snapshot.scratchPad },
-                    set: { store.setScratchPad($0) }
-                ))
-                .font(.system(size: PearsonStyle.textSize(14)))
-                .frame(height: 220)
-                .overlay(Rectangle().stroke(PearsonStyle.line))
-                .accessibilityIdentifier("scratchPadEditor")
             }
         case .navigator:
             VStack(alignment: .leading, spacing: 10) {
@@ -502,8 +500,8 @@ struct ExamRootView: View {
             }
         case .submit:
             VStack(alignment: .leading, spacing: 12) {
-                Text("End review and submit your exam for scoring?").bold()
-                Text("Unanswered questions will be scored incorrect.")
+                Text("Are you sure you want to end the exam and submit it for scoring?").bold()
+                Text("You can cancel to return to the exam. Unanswered questions will be scored incorrect.")
                 Text("\(store.incompleteCount) unanswered question(s).")
                     .foregroundColor(.red)
                 Text("Once submitted, answers cannot be changed.")

@@ -67,13 +67,8 @@ final class ExamStore: ObservableObject {
         next.candidateName = String(newValue.prefix(75))
         commit(next)
     }
-    func setScratchPad(_ text: String) {
-        var next = snapshot
-        next.scratchPad = text
-        commit(next)
-    }
     func nextTutorial() {
-        if snapshot.tutorialIndex >= 4 { startExam(); return }
+        if snapshot.tutorialIndex >= 3 { startExam(); return }
         var next = snapshot
         next.tutorialIndex += 1
         commit(next)

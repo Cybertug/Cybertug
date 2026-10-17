@@ -2,9 +2,12 @@ import SwiftUI
 
 enum PearsonStyle {
     // Adjust this single factor for gradual readability improvements on iPhone.
-    // 1.10 = first typography pass (+10%). Large score headings are unchanged.
+    // Standard reading text remains at +10% over the initial release.
     static let readingScale: CGFloat = 1.10
     static func textSize(_ base: CGFloat) -> CGFloat { base * readingScale }
+    // Questions and answers: +18% vs initial sizes (about 7% vs Build 2).
+    static let examReadingScale: CGFloat = 1.18
+    static func examTextSize(_ base: CGFloat) -> CGFloat { base * examReadingScale }
 
     static let blue = Color(red: 0.000, green: 0.427, blue: 0.655)
     static let toolbar = Color(red: 0.541, green: 0.710, blue: 0.875)
@@ -21,12 +24,12 @@ struct PearsonFooterButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: PearsonStyle.textSize(11), weight: .semibold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
                 .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .minimumScaleFactor(0.84)
                 .padding(.horizontal, 8)
-                .frame(minHeight: 44)
+                .frame(minHeight: 48)
                 .overlay(alignment: .leading) {
                     Rectangle().fill(Color.white.opacity(0.43)).frame(width: 1)
                 }
