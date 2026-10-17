@@ -51,9 +51,17 @@ struct ExamRootView: View {
             }
             .foregroundColor(PearsonStyle.text)
         }
-        .onChange(of: scenePhase) { _ in
-            store.refreshClock()
-            store.persist()
+        .onChange(of: scenePhase) { nextPhase in
+            switch nextPhase {
+            case .background:
+                // Treat leaving the app as ending the current examination.
+                panel = nil
+                store.resetForExit()
+            case .active:
+                store.refreshClock()
+            default:
+                break
+            }
         }
         .onChange(of: stage) { next in
             if next == .results { panel = nil }

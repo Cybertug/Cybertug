@@ -38,6 +38,13 @@ enum ReviewFilter: String, Codable {
 }
 
 struct ExamSnapshot: Codable {
+    /// A new session has no exam, answers, flags, end date, or time already elapsed.
+    static func freshAttempt(keepingCandidateName name: String) -> ExamSnapshot {
+        var fresh = ExamSnapshot()
+        fresh.candidateName = name
+        return fresh
+    }
+
     var stage: ExamStage = .tutorial
     var candidateName: String = ""
     var tutorialIndex: Int = 0

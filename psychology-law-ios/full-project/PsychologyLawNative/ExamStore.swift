@@ -1,7 +1,8 @@
 import Foundation
 import Combine
 
-/// Owns an entire attempt. Questions, answers, and clock state are saved on-device.
+/// Owns the current exam attempt. An attempt is discarded on background or cold launch.
+/// Only the candidate name and recently used question IDs persist between launches.
 /// There are no browser dependencies, network requests, or WebViews.
 @MainActor
 final class ExamStore: ObservableObject {
@@ -11,7 +12,8 @@ final class ExamStore: ObservableObject {
 
     private let bank: [LawQuestion]
     private var timer: Timer?
-    private let snapshotKey = "psychologyLawNative.session.v1"
+    private let snapshotKey = "psychologyLawNative.session.v1" // old saved-session key; migration only
+    private let candidateNameKey = "psychologyLawNative.candidateName.v1"
     private let recentIDsKey = "psychologyLawNative.lastIDs.v1"
 
     init() {
@@ -22,11 +24,15 @@ final class ExamStore: ObservableObject {
         } else {
             bank = []
         }
-        if let data = UserDefaults.standard.data(forKey: snapshotKey),
-           let saved = try? JSONDecoder().decode(ExamSnapshot.self, from: data) {
-            snapshot = saved
-        }
-        refreshClock()
+        // Never restore a previous examination: every launch starts with a fresh timer
+        // and no saved answers, even if the app was force-quit before backgrounding.
+        let savedName = UserDefaults.standard.string(forKey: candidateNameKey)
+        let previousSession = UserDefaults.standard.data(forKey: snapshotKey)
+            .flatMap { try? JSONDecoder().decode(ExamSnapshot.self, from: $0) }
+        snapshot = ExamSnapshot.freshAttempt(keepingCandidateName: savedName ?? previousSession?.candidateName ?? "")
+        secondsRemaining = ExamEngine.examDurationSeconds
+        UserDefaults.standard.removeObject(forKey: snapshotKey)
+
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.refreshClock() }
         }
@@ -58,8 +64,16 @@ final class ExamStore: ObservableObject {
         persist()
     }
     func persist() {
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        UserDefaults.standard.set(data, forKey: snapshotKey)
+        // Never persist answers, exam stage, or time remaining.
+        UserDefaults.standard.set(snapshot.candidateName, forKey: candidateNameKey)
+        UserDefaults.standard.removeObject(forKey: snapshotKey)
+    }
+
+    func resetForExit() {
+        // Going to background ends the current attempt; the countdown no longer runs.
+        secondsRemaining = ExamEngine.examDurationSeconds
+        errorText = nil
+        commit(ExamSnapshot.freshAttempt(keepingCandidateName: snapshot.candidateName))
     }
 
     func setCandidateName(_ newValue: String) {
@@ -175,9 +189,6 @@ final class ExamStore: ObservableObject {
         commit(next)
     }
     func restart() {
-        var next = ExamSnapshot()
-        next.candidateName = snapshot.candidateName
-        commit(next)
-        secondsRemaining = ExamEngine.examDurationSeconds
+        resetForExit()
     }
 }
