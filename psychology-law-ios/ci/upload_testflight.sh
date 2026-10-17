@@ -60,7 +60,7 @@ xcodebuild -project PsychologyLawNative.xcodeproj \
  DEVELOPMENT_TEAM="$APPSTORE_TEAM_ID" \
  PRODUCT_BUNDLE_IDENTIFIER="$APPSTORE_BUNDLE_ID" \
  MARKETING_VERSION="$RELEASE_VERSION" \
- CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER:-1}" \
+ CURRENT_PROJECT_VERSION="$(( ${GITHUB_RUN_NUMBER:-1} + 1 ))" \
  archive > "$WORK/archive.log" 2>&1 || {
     tail -n 80 "$WORK/archive.log"
     exit 1
