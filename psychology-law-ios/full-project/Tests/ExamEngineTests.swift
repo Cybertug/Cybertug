@@ -26,6 +26,21 @@ struct ExamEngineTests {
         precondition(bank.allSatisfy { $0.options.count == 4 && (0..<4).contains($0.correct) })
         precondition(bank.allSatisfy { !$0.explanation.isEmpty && !$0.source.isEmpty })
         let byID = Dictionary(uniqueKeysWithValues: bank.map { ($0.id, $0) })
+        // Protect legal-answer corrections identified during the October 2026 audit.
+        let client = byID["IP-3-34"]!
+        precondition(client.topic == "64B19" && client.source == "64B19-19.002")
+        precondition(client.options[client.correct].contains("patient who privately consulted"))
+        precondition(client.explanation.lowercased().contains("regardless of who pays"))
+        let conflict = byID["IP-3-12"]!
+        precondition(conflict.options[conflict.correct].contains("conflict"))
+        precondition(conflict.explanation.contains("64B19-18.007"))
+        let report = byID["IP-2-6"]!
+        precondition(report.options[report.correct].contains("must give their names"))
+        // The live test and every explanation must remain in English.
+        precondition(bank.allSatisfy {
+            let explanation = $0.explanation.lowercased()
+            return !["não", "explicação", "a regra", "deve ser", "portanto"].contains(where: explanation.contains)
+        })
         for repeatIndex in 0..<150 {
             let recentIDs = Set(repeatIndex % 2 == 0 ? Array(bank.prefix(45)).map(\.id) : [])
             var items = try ExamEngine.makeExam(from: bank, excludingRecent: recentIDs)
