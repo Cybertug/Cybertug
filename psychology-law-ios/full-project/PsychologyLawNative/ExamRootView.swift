@@ -36,6 +36,7 @@ struct ExamRootView: View {
                         case .exam: examContent
                         case .review: reviewContent(width: geometry.size.width)
                         case .results: resultsContent
+                        case .answerReview: answerReviewContent
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -86,7 +87,7 @@ struct ExamRootView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .trailing, spacing: 4) {
                 Text("Time Remaining").font(.system(size: 12, weight: .medium))
-                Text(stage == .results ? "--:--" : store.clockText)
+                Text(stage == .results || stage == .answerReview ? "--:--" : store.clockText)
                     .font(.system(size: 17, weight: .bold, design: .monospaced))
                 Text(counterLabel).font(.system(size: 12.5, weight: .medium))
             }
@@ -106,6 +107,8 @@ struct ExamRootView: View {
         case .exam: return "▣ \(store.snapshot.currentIndex + 1) of \(store.questionCount)"
         case .review: return "▣ Section Review"
         case .results: return "▣ Score Report"
+        case .answerReview:
+            return "▣ Review \((store.resultReviewPosition ?? 0) + 1) of \(store.resultReviewIndices.count)"
         }
     }
 
@@ -184,12 +187,40 @@ struct ExamRootView: View {
                     }
                 }
             case .results:
-                HStack(spacing: 0) {
-                    PearsonFooterButton(title: "Start New Exam") { store.restart() }
-                    Spacer(minLength: 0)
-                    PearsonFooterButton(title: store.snapshot.showAllAnswers ? "Incorrect Only" : "Review All") {
-                        store.toggleResultReview()
+                VStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        PearsonFooterButton(title: "Start New Exam") { store.restart() }
+                            .frame(maxWidth: .infinity)
+                        PearsonFooterButton(title: "Review All") { store.openAnswerReview(.all) }
+                            .frame(maxWidth: .infinity)
                     }
+                    Rectangle().fill(Color.white.opacity(0.35)).frame(height: 1)
+                    HStack(spacing: 0) {
+                        PearsonFooterButton(title: "Review Incorrect (\(store.incorrectCount))",
+                                            disabled: store.incorrectCount == 0) {
+                            store.openAnswerReview(.incorrect)
+                        }
+                        .frame(maxWidth: .infinity)
+                        PearsonFooterButton(title: "Review Flagged (\(store.flaggedCount))",
+                                            disabled: store.flaggedCount == 0) {
+                            store.openAnswerReview(.flagged)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            case .answerReview:
+                HStack(spacing: 0) {
+                    PearsonFooterButton(title: "End Review") { store.endAnswerReview() }
+                        .frame(maxWidth: .infinity)
+                    PearsonFooterButton(title: "◀ Previous", disabled: (store.resultReviewPosition ?? 0) == 0) {
+                        store.moveAnswerReview(by: -1)
+                    }
+                    .frame(maxWidth: .infinity)
+                    PearsonFooterButton(title: "Next ▶",
+                                        disabled: (store.resultReviewPosition ?? 0) >= store.resultReviewIndices.count - 1) {
+                        store.moveAnswerReview(by: 1)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
@@ -249,6 +280,9 @@ struct ExamRootView: View {
         ScrollView {
             if let item = store.currentItem {
                 VStack(alignment: .leading, spacing: 18) {
+                    Text("Question \(store.snapshot.currentIndex + 1) of \(store.questionCount)")
+                        .font(.system(size: PearsonStyle.textSize(12), weight: .semibold))
+                        .foregroundColor(.secondary)
                     Text(item.question)
                         .font(.system(size: PearsonStyle.examTextSize(15)))
                         .fixedSize(horizontal: false, vertical: true)
@@ -259,6 +293,9 @@ struct ExamRootView: View {
                             } label: {
                                 HStack(alignment: .top, spacing: 10) {
                                     PearsonRadio(isSelected: item.selectedIndex == index)
+                                    Text(["A", "B", "C", "D"][index] + ".")
+                                        .font(.system(size: PearsonStyle.examTextSize(14), weight: .semibold))
+                                        .foregroundColor(PearsonStyle.text)
                                     Text(item.options[index])
                                         .font(.system(size: PearsonStyle.examTextSize(14)))
                                         .foregroundColor(PearsonStyle.text)
@@ -343,63 +380,149 @@ struct ExamRootView: View {
 
     private var resultsContent: some View {
         let score = store.score
-        let filtered = store.snapshot.items.indices.filter { idx in
-            let item = store.snapshot.items[idx]
-            return item.isScored && (store.snapshot.showAllAnswers || item.selectedIndex != item.correctIndex)
-        }
+        let incorrect = store.availableAnswerReviewIndices(.incorrect)
         return ScrollView {
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: 13) {
                 Text("Practice Exam Result")
-                    .font(.system(size: 21, weight: .bold))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundColor(PearsonStyle.blue)
                 Text(score.passed ? "PASS" : "FAIL")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 30, weight: .bold))
                     .foregroundColor(score.passed ? .green : .red)
                     .accessibilityIdentifier("passFailResult")
-                Text("\(score.correct) / \(score.scored)")
+                Text("\(score.correct) / \(score.scored) · \(score.percentage)%")
                     .font(.system(size: 24, weight: .bold))
-                Text("\(score.percentage)% on scored items · 32/40 required for PASS · \(score.unscored) unscored questions excluded")
-                    .font(.system(size: PearsonStyle.textSize(12)))
+                Text("Passing score: \(score.passingThreshold)/\(score.scored) (80%). \(score.unscored) pilot questions do not count toward PASS or FAIL.")
+                    .font(.system(size: PearsonStyle.textSize(13)))
                 if store.snapshot.didTimeExpire {
-                    Text("Time expired; the examination was submitted automatically.")
+                    Text("Time expired. Your examination was submitted automatically.")
                         .foregroundColor(.red)
+                        .font(.system(size: PearsonStyle.textSize(13), weight: .semibold))
                 }
-                PearsonSectionBand(title: store.snapshot.showAllAnswers ? "Review All Scored Questions" : "Review Incorrect and Unanswered Scored Questions")
-                if filtered.isEmpty {
-                    Text("All scored questions answered correctly.")
+
+                PearsonSectionBand(title: "▣ Answer Review")
+                Text("Choose Review All, Review Incorrect, or Review Flagged using the footer. Review All includes all 45 questions; unscored pilot items are clearly identified. Each question has an English explanation and a legal source citation.")
+                    .font(.system(size: PearsonStyle.textSize(13)))
+                Text("\(incorrect.count) incorrect or unanswered scored question(s) · \(store.flaggedCount) flagged question(s)")
+                    .font(.system(size: PearsonStyle.textSize(12), weight: .semibold))
+                    .foregroundColor(PearsonStyle.blue)
+
+                PearsonSectionBand(title: "▣ Incorrect and Unanswered Scored Questions",
+                                   trailing: "\(incorrect.count) Questions")
+                if incorrect.isEmpty {
+                    Text("All 40 scored questions were answered correctly.")
                         .font(.system(size: PearsonStyle.textSize(13)))
-                        .padding(.vertical, 8)
-                }
-                ForEach(filtered, id: \.self) { index in
-                    let item = store.snapshot.items[index]
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Question \(index + 1): \(item.question)")
-                            .font(.system(size: PearsonStyle.textSize(13), weight: .bold))
-                        HStack {
-                            Text("Your answer:").bold()
-                            Text(item.selectedIndex.map { item.options[$0] } ?? "Unanswered")
+                        .padding(.vertical, 12)
+                } else {
+                    ForEach(incorrect, id: \.self) { index in
+                        let item = store.snapshot.items[index]
+                        Button {
+                            store.openAnswerReview(.incorrect, at: index)
+                        } label: {
+                            HStack(alignment: .top, spacing: 9) {
+                                Text("\(index + 1).")
+                                    .fontWeight(.bold)
+                                    .frame(width: 28, alignment: .leading)
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(item.question)
+                                        .multilineTextAlignment(.leading)
+                                        .foregroundColor(PearsonStyle.text)
+                                    Text(item.selectedIndex == nil ? "Unanswered — View explanation" : "Incorrect — View explanation")
+                                        .font(.system(size: PearsonStyle.textSize(11), weight: .medium))
+                                        .foregroundColor(.red)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(PearsonStyle.blue)
+                            }
+                            .font(.system(size: PearsonStyle.textSize(13)))
+                            .padding(.vertical, 12)
+                            .padding(.horizontal, 10)
+                            .background(Color(red: 0.97, green: 0.985, blue: 1))
+                            .overlay(Rectangle().stroke(PearsonStyle.line, lineWidth: 0.7))
+                            .contentShape(Rectangle())
                         }
-                        .foregroundColor(item.selectedIndex == item.correctIndex ? .green : .red)
-                        HStack(alignment: .top) {
-                            Text("Correct answer:").bold()
-                            Text(item.options[item.correctIndex])
-                        }
-                        .foregroundColor(.green)
-                        Text("Explanation:").bold()
-                        Text(item.explanation)
-                        Text("Legal source: \(item.source)")
-                            .font(.system(size: PearsonStyle.textSize(11)))
-                            .foregroundColor(.secondary)
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("resultIncorrectQuestion\(index + 1)")
                     }
-                    .font(.system(size: PearsonStyle.textSize(12)))
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(red: 0.97, green: 0.985, blue: 1))
-                    .overlay(Rectangle().stroke(PearsonStyle.line))
                 }
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var answerReviewContent: some View {
+        ScrollView {
+            if let item = store.currentItem {
+                let letters = ["A", "B", "C", "D"]
+                VStack(alignment: .leading, spacing: 15) {
+                    Text("Question \(store.snapshot.currentIndex + 1) of \(store.questionCount)")
+                        .font(.system(size: PearsonStyle.textSize(13), weight: .bold))
+                        .foregroundColor(PearsonStyle.blue)
+                    if !item.isScored {
+                        Text("UNSCORED PRACTICE QUESTION — EXCLUDED FROM PASS/FAIL")
+                            .font(.system(size: PearsonStyle.textSize(12), weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                    Text(item.question)
+                        .font(.system(size: PearsonStyle.examTextSize(15), weight: .semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(item.options.indices, id: \.self) { index in
+                            let isCorrect = index == item.correctIndex
+                            let selected = item.selectedIndex == index
+                            HStack(alignment: .top, spacing: 10) {
+                                Text(letters[index] + ".")
+                                    .font(.system(size: PearsonStyle.examTextSize(14), weight: .bold))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.options[index])
+                                        .font(.system(size: PearsonStyle.examTextSize(14)))
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    if isCorrect {
+                                        Label("Correct answer", systemImage: "checkmark.circle.fill")
+                                            .font(.system(size: PearsonStyle.textSize(11), weight: .semibold))
+                                    }
+                                    if selected {
+                                        Text("Your answer")
+                                            .font(.system(size: PearsonStyle.textSize(11), weight: .semibold))
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .foregroundColor(isCorrect ? .green : (selected ? .red : PearsonStyle.text))
+                            .padding(10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(isCorrect ? Color.green.opacity(0.09) :
+                                        (selected ? Color.red.opacity(0.07) : Color.white))
+                            .overlay(Rectangle().stroke(PearsonStyle.line, lineWidth: 0.8))
+                        }
+                    }
+
+                    PearsonSectionBand(title: "▣ Solution")
+                    Text("Your answer: " + (item.selectedIndex.map { letters[$0] + ". " + item.options[$0] } ?? "Unanswered"))
+                        .font(.system(size: PearsonStyle.textSize(13)))
+                    Text("Correct answer: " + letters[item.correctIndex] + ". " + item.options[item.correctIndex])
+                        .font(.system(size: PearsonStyle.textSize(13), weight: .semibold))
+                        .foregroundColor(.green)
+                    Text("Explanation")
+                        .font(.system(size: PearsonStyle.textSize(14), weight: .bold))
+                    Text(item.explanation)
+                        .font(.system(size: PearsonStyle.examTextSize(14)))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Legal source: \(item.source)")
+                        .font(.system(size: PearsonStyle.textSize(12)))
+                        .foregroundColor(.secondary)
+                    if !item.isScored {
+                        Text("This question was unscored and did not affect your passing score.")
+                            .font(.system(size: PearsonStyle.textSize(12), weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(15)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 
