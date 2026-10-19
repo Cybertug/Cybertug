@@ -85,7 +85,8 @@
                 CURRENT_PROJECT_VERSION = 1;
                 GENERATE_INFOPLIST_FILE = YES;
                 INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-                INFOPLIST_KEY_CFBundleDisplayName = "Psychology Law";
+                INFOPLIST_KEY_CFBundleDisplayName = "Simula Pro";
+                INFOPLIST_KEY_CFBundleName = "Simula Pro";
                 INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
                 INFOPLIST_KEY_UILaunchScreen_Generation = YES;
                 INFOPLIST_KEY_UIRequiresFullScreen = YES;
@@ -107,7 +108,8 @@
                 CURRENT_PROJECT_VERSION = 1;
                 GENERATE_INFOPLIST_FILE = YES;
                 INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-                INFOPLIST_KEY_CFBundleDisplayName = "Psychology Law";
+                INFOPLIST_KEY_CFBundleDisplayName = "Simula Pro";
+                INFOPLIST_KEY_CFBundleName = "Simula Pro";
                 INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
                 INFOPLIST_KEY_UILaunchScreen_Generation = YES;
                 INFOPLIST_KEY_UIRequiresFullScreen = YES;

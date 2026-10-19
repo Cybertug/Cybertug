@@ -19,7 +19,14 @@ enum SimulatorPanel: Equatable {
 struct ExamRootView: View {
     @StateObject private var store = ExamStore()
     @State private var panel: SimulatorPanel?
+    @State private var showExitConfirmation = false
     @Environment(\.scenePhase) private var scenePhase
+
+    let onExit: (() -> Void)?
+
+    init(onExit: (() -> Void)? = nil) {
+        self.onExit = onExit
+    }
 
     private var stage: ExamStage { store.snapshot.stage }
 
@@ -67,11 +74,41 @@ struct ExamRootView: View {
         .onChange(of: stage) { next in
             if next == .results { panel = nil }
         }
+        .alert("Exit Psychology Law?", isPresented: $showExitConfirmation) {
+            Button("Keep Exam", role: .cancel) {}
+            Button("Exit and Restart", role: .destructive) {
+                exitToSimulaPro()
+            }
+        } message: {
+            Text("Your answers and time remaining will be discarded. Opening this simulator again starts a new exam.")
+        }
+    }
+
+    private func exitToSimulaPro() {
+        panel = nil
+        store.resetForExit()
+        onExit?()
     }
 
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 6) {
+                if onExit != nil {
+                    Button {
+                        if stage == .exam || stage == .review {
+                            showExitConfirmation = true
+                        } else {
+                            exitToSimulaPro()
+                        }
+                    } label: {
+                        Label("Simula Pro", systemImage: "chevron.left")
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.88))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 2)
+                    .accessibilityIdentifier("backToSimulaPro")
+                }
                 Text("Florida Laws & Rules Examination Simulator")
                     .font(.system(size: 16.5, weight: .bold))
                     .foregroundColor(.white)

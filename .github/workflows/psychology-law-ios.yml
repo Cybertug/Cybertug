@@ -52,6 +52,30 @@ jobs:
           assert "snapshot = saved" not in store
           print("PASS: background reset and no resume on cold launch.")
           PY
+      - name: Verify Simula Pro home and module navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("psychology-law-ios/full-project")
+          home = (p / "PsychologyLawNative/PsychologyLawApp.swift").read_text()
+          exam = (p / "PsychologyLawNative/ExamRootView.swift").read_text()
+          project = (p / "PsychologyLawNative.xcodeproj/project.pbxproj").read_text()
+          assert "@main\nstruct SimulaProApp: App" in home
+          assert "SimulaProRootView()" in home
+          assert 'title: "Psychology Law"' in home
+          assert "ExamRootView(onExit:" in home
+          assert "backToSimulaPro" in exam
+          assert "showExitConfirmation" in exam
+          assert "store.resetForExit()" in exam
+          assert project.count('INFOPLIST_KEY_CFBundleDisplayName = "Simula Pro";') == 2
+          assert project.count('PRODUCT_BUNDLE_IDENTIFIER = com.simulapro.psychologylaw;') == 2
+          assets = p / "PsychologyLawNative/Assets.xcassets"
+          for folder in ["AppIcon.appiconset", "SimulaProMark.imageset", "PsychologyLawMark.imageset"]:
+              assert (assets / folder / "Contents.json").is_file(), folder
+          print("PASS: Simula Pro platform, Psychology Law routing, safe exit, existing bundle, two marks.")
+          PY
       - name: Build complete SwiftUI app for iPhone Simulator
         shell: bash
         run: |
