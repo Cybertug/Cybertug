@@ -1,0 +1,24 @@
+name: Verify Psychology Law Build 6 for Internal Testers
+
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/verify-psychology-build6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 15
+    env:
+      APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+      APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and release Build 6 to SimulaPro Internal
+        run: ruby psychology-law-ios/ci/verify_build6_internal.rb
