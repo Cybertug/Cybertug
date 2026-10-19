@@ -29,11 +29,19 @@ enum ExamStage: String, Codable {
     case exam
     case review
     case results
+    case answerReview
 }
 
 enum ReviewFilter: String, Codable {
     case all
     case incomplete
+    case flagged
+}
+
+/// The review screens after scoring never allow answers to be changed.
+enum ResultReviewFilter: String, Codable {
+    case all
+    case incorrect
     case flagged
 }
 
@@ -54,6 +62,7 @@ struct ExamSnapshot: Codable {
     var endDate: Date?
     var didTimeExpire: Bool = false
     var reviewFilter: ReviewFilter = .all
+    var resultReviewFilter: ResultReviewFilter = .incorrect
     var showAllAnswers: Bool = false
 }
 

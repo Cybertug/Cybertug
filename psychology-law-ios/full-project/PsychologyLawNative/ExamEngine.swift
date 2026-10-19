@@ -50,6 +50,23 @@ enum ExamEngine {
         }
     }
 
+    /// Post-exam review follows the Pearson-style All / Incorrect / Flagged options.
+    /// Only the 40 scored items are counted as incorrect for the score report;
+    /// Review All includes every question, explicitly labelling the five pilots.
+    static func reviewIndices(in items: [ExamItem], matching filter: ResultReviewFilter) -> [Int] {
+        items.indices.filter { index in
+            let item = items[index]
+            switch filter {
+            case .all:
+                return true
+            case .incorrect:
+                return item.isScored && item.selectedIndex != item.correctIndex
+            case .flagged:
+                return item.isFlagged
+            }
+        }
+    }
+
     static func score(_ items: [ExamItem]) -> ExamScore {
         let scoredItems = items.filter(\.isScored)
         let correct = scoredItems.filter { $0.selectedIndex == $0.correctIndex }.count

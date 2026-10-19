@@ -55,6 +55,17 @@ struct ExamEngineTests {
             let last = items.indices.first { items[$0].isScored && items[$0].selectedIndex == nil }!
             items[last].selectedIndex = items[last].correctIndex
             precondition(ExamEngine.score(items).correct == 32 && ExamEngine.score(items).passed)
+            let everyIndex = ExamEngine.reviewIndices(in: items, matching: .all)
+            precondition(everyIndex.count == 45 && everyIndex == Array(items.indices))
+            let incorrect = ExamEngine.reviewIndices(in: items, matching: .incorrect)
+            precondition(incorrect.allSatisfy { idx in
+                items[idx].isScored && items[idx].selectedIndex != items[idx].correctIndex
+            })
+            precondition(incorrect.count == 8)
+            precondition(ExamEngine.reviewIndices(in: items, matching: .flagged).isEmpty)
+            items[0].isFlagged = true
+            items[27].isFlagged = true
+            precondition(ExamEngine.reviewIndices(in: items, matching: .flagged) == [0,27])
         }
         print("PASS: 325 unique questions; 150 randomized exams; 45 questions, 40 scored, 5 pilots, exact topic quotas, option answer mappings, 31 fail / 32 pass.")
     }

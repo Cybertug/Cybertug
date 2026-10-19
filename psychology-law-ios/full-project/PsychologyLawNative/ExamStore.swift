@@ -49,6 +49,16 @@ final class ExamStore: ObservableObject {
     var answeredCount: Int { snapshot.items.filter { $0.selectedIndex != nil }.count }
     var incompleteCount: Int { questionCount - answeredCount }
     var flaggedCount: Int { snapshot.items.filter(\.isFlagged).count }
+    var incorrectCount: Int { availableAnswerReviewIndices(.incorrect).count }
+    var resultReviewIndices: [Int] {
+        availableAnswerReviewIndices(snapshot.resultReviewFilter)
+    }
+    var resultReviewPosition: Int? {
+        resultReviewIndices.firstIndex(of: snapshot.currentIndex)
+    }
+    func availableAnswerReviewIndices(_ filter: ResultReviewFilter) -> [Int] {
+        ExamEngine.reviewIndices(in: snapshot.items, matching: filter)
+    }
     var displayName: String {
         let trimmed = snapshot.candidateName.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "Candidate Name" : trimmed
@@ -142,7 +152,8 @@ final class ExamStore: ObservableObject {
         commit(next)
     }
     func goToQuestion(_ index: Int) {
-        guard snapshot.items.indices.contains(index), snapshot.stage != .results else { return }
+        guard snapshot.items.indices.contains(index),
+              snapshot.stage == .exam || snapshot.stage == .review else { return }
         var next = snapshot
         next.currentIndex = index
         next.stage = .exam
@@ -182,10 +193,31 @@ final class ExamStore: ObservableObject {
         next.showAllAnswers = false
         commit(next)
     }
-    func toggleResultReview() {
+    func openAnswerReview(_ filter: ResultReviewFilter, at requestedIndex: Int? = nil) {
         guard snapshot.stage == .results else { return }
+        let indices = availableAnswerReviewIndices(filter)
+        guard let first = requestedIndex.flatMap({ indices.contains($0) ? $0 : nil })
+                ?? indices.first else { return }
         var next = snapshot
-        next.showAllAnswers.toggle()
+        next.stage = .answerReview
+        next.resultReviewFilter = filter
+        next.currentIndex = first
+        commit(next)
+    }
+    func moveAnswerReview(by direction: Int) {
+        guard snapshot.stage == .answerReview,
+              let position = resultReviewPosition else { return }
+        let indices = resultReviewIndices
+        let nextPosition = position + direction
+        guard indices.indices.contains(nextPosition) else { return }
+        var next = snapshot
+        next.currentIndex = indices[nextPosition]
+        commit(next)
+    }
+    func endAnswerReview() {
+        guard snapshot.stage == .answerReview else { return }
+        var next = snapshot
+        next.stage = .results
         commit(next)
     }
     func restart() {
