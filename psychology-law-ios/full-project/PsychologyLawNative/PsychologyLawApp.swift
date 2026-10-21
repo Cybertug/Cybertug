@@ -33,25 +33,48 @@ struct SimulaProApp: App {
 }
 
 struct SimulaProRootView: View {
+    @StateObject private var subscription = SubscriptionStore()
     @State private var selectedModule: SimulatorID?
     @State private var sessionNumber = 0
+    @State private var showsSubscription = false
+    @Environment(\.scenePhase) private var scenePhase
 
     @ViewBuilder
     var body: some View {
-        if selectedModule == .psychologyLaw {
-            ExamRootView(onExit: { selectedModule = nil })
-                .id(sessionNumber)
-        } else {
-            SimulaProCatalogView(offerings: SimulatorOffering.available) { module in
-                sessionNumber += 1
-                selectedModule = module
+        Group {
+            if selectedModule == .psychologyLaw && subscription.hasAccess {
+                ExamRootView(onExit: { selectedModule = nil })
+                    .id(sessionNumber)
+            } else {
+                SimulaProCatalogView(offerings: SimulatorOffering.available,
+                                     subscription: subscription,
+                                     onSubscription: { showsSubscription = true }) { module in
+                    if subscription.hasAccess {
+                        sessionNumber += 1
+                        selectedModule = module
+                    } else {
+                        showsSubscription = true
+                    }
+                }
             }
+        }
+        .task { await subscription.start() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { Task { await subscription.refreshEntitlements() } }
+        }
+        .onChange(of: subscription.hasAccess) { hasAccess in
+            if !hasAccess { selectedModule = nil }
+        }
+        .sheet(isPresented: $showsSubscription) {
+            SubscriptionView(store: subscription)
         }
     }
 }
 
 struct SimulaProCatalogView: View {
     let offerings: [SimulatorOffering]
+    @ObservedObject var subscription: SubscriptionStore
+    let onSubscription: () -> Void
     let onOpen: (SimulatorID) -> Void
 
     private let ink = Color(red: 0.075, green: 0.145, blue: 0.31)
@@ -73,6 +96,24 @@ struct SimulaProCatalogView: View {
                                 .foregroundColor(ink.opacity(0.73))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        Button(action: onSubscription) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text("Simula Pro Access").font(.headline)
+                                    Text(subscription.isLoading ? "Checking subscription…" :
+                                         subscription.hasAccess ? "Active subscription · All available simulators" :
+                                         "Subscription required · View monthly and yearly plans")
+                                        .font(.subheadline)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                            }
+                            .foregroundColor(ink)
+                            .padding(17)
+                            .background(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .accessibilityIdentifier("subscriptionStatus")
 
                         HStack {
                             Text("AVAILABLE SIMULATORS")
@@ -196,11 +237,11 @@ struct SimulaProCatalogView: View {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(Color(red: 0.10, green: 0.55, blue: 0.41))
-                Text("Ready to practice")
+                Text(subscription.isLoading ? "Checking access" : subscription.hasAccess ? "Ready to practice" : "Subscription required")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(ink.opacity(0.70))
                 Spacer(minLength: 0)
-                Text("OPEN SIMULATOR")
+                Text(subscription.hasAccess ? "OPEN SIMULATOR" : "VIEW ACCESS")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .tracking(0.45)
                     .foregroundColor(blue)
@@ -218,6 +259,7 @@ struct SimulaProCatalogView: View {
         .shadow(color: ink.opacity(0.07), radius: 12, y: 5)
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(offering.title), \(offering.subtitle), open simulator")
+        .accessibilityLabel("\(offering.title), \(offering.subtitle), \(subscription.hasAccess ? "open simulator" : "view subscription")")
     }
 }
+

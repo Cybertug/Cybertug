@@ -76,6 +76,15 @@ jobs:
               assert (assets / folder / "Contents.json").is_file(), folder
           print("PASS: Simula Pro platform, Psychology Law routing, safe exit, existing bundle, two marks.")
           PY
+      - name: Test subscription product access policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="psychology-law-ios/full-project"
+          swiftc "$SOURCE/PsychologyLawNative/SubscriptionPolicy.swift" \
+                 "$SOURCE/Tests/SubscriptionPolicyTests.swift" \
+                 -o "$RUNNER_TEMP/subscription-policy-tests"
+          "$RUNNER_TEMP/subscription-policy-tests"
       - name: Build complete SwiftUI app for iPhone Simulator
         shell: bash
         run: |
@@ -111,3 +120,4 @@ jobs:
           name: PsychologyLaw-Full325-iPhone-Simulator
           path: artifacts/
           if-no-files-found: warn
+
