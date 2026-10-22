@@ -43,6 +43,11 @@ found = []
 groups.each do |group|
   group_id = group.fetch('id')
   puts "Group: #{group.dig('attributes', 'referenceName')} (#{group_id})"
+  versions = get_json("/v1/subscriptionGroups/#{group_id}/versions?limit=200", token).fetch('data')
+  versions.each do |version|
+    localized = get_json("/v1/subscriptionGroupVersions/#{version.fetch('id')}/localizations?limit=200", token).fetch('data')
+    puts "Group version: #{version.dig('attributes', 'state')}; locales=#{localized.map { |x| x.dig('attributes', 'locale') }.join(',')}"
+  end
   products = get_json("/v1/subscriptionGroups/#{group_id}/subscriptions?limit=200", token).fetch('data')
   products.each do |product|
     attrs = product.fetch('attributes')
@@ -50,6 +55,15 @@ groups.each do |group|
     found << product_id
     prices = get_json("/v1/subscriptions/#{product.fetch('id')}/prices?filter%5Bterritory%5D=USA&limit=200", token).fetch('data')
     puts "Product: #{product_id}; state=#{attrs['state']}; period=#{attrs['subscriptionPeriod']}; USA price records=#{prices.length}"
+    details = get_json("/v1/subscriptions/#{product.fetch('id')}", token).fetch('data')
+    puts "  relationship keys=#{details.fetch('relationships', {}).keys.join(',')}"
+    puts "  review screenshot attached=#{!details.dig('relationships', 'appStoreReviewScreenshot', 'data').nil?}"
+    versions = get_json("/v1/subscriptions/#{product.fetch('id')}/versions?limit=200", token).fetch('data')
+    puts "  versions=#{versions.map { |v| v.dig('attributes', 'state') }.join(',')}"
+    localizations = get_json("/v1/subscriptions/#{product.fetch('id')}/subscriptionLocalizations?limit=200", token).fetch('data')
+    puts "  locales=#{localizations.map { |x| x.dig('attributes', 'locale') + ':' + x.dig('attributes', 'state').to_s }.join(',')}"
+    plans = get_json("/v1/subscriptions/#{product.fetch('id')}/planAvailabilities?limit=200", token).fetch('data')
+    puts "  plan availability=#{plans.map { |x| x.dig('attributes', 'planType') }.join(',')}"
   end
 end
 expected = %w[com.simulapro.access.monthly com.simulapro.access.yearly]
