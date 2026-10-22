@@ -531,7 +531,8 @@ struct GCFEExamView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(q.topic.uppercased()).font(.caption.bold()).foregroundStyle(blue)
-                    Text(q.question).font(.title3).textSelection(.enabled)
+                    Text(q.question.replacingOccurrences(of: #"\{\{[0-9]+\}\}"#, with: "____", options: .regularExpression))
+                        .font(.title3).textSelection(.enabled)
                     if !q.diagramSVG.isEmpty && q.kind != "hotspot" {
                         SVGPanel(svg: q.diagramSVG).frame(height: 245)
                     }
@@ -634,19 +635,21 @@ struct GCFEExamView: View {
         case "hotspot":
             Text("Tap the correct point on the diagram.").font(.subheadline).foregroundStyle(.secondary)
             GeometryReader { geometry in
+                let svgRect = diagramRect(q.diagramSVG, in: geometry.size)
                 ZStack {
                     SVGPanel(svg: q.diagramSVG)
                     if response.point.count == 2 {
                         Circle().stroke(.orange, lineWidth: 3).background(Circle().fill(.orange.opacity(0.25)))
                             .frame(width: 25, height: 25)
-                            .position(x: response.point[0] * geometry.size.width,
-                                      y: response.point[1] * geometry.size.height)
+                            .position(x: svgRect.minX + response.point[0] * svgRect.width,
+                                      y: svgRect.minY + response.point[1] * svgRect.height)
                     }
                 }
                 .contentShape(Rectangle())
                 .gesture(SpatialTapGesture().onEnded { event in
                     var r = response
-                    r.point = [event.location.x / geometry.size.width, event.location.y / geometry.size.height]
+                    r.point = [(event.location.x - svgRect.minX) / svgRect.width,
+                               (event.location.y - svgRect.minY) / svgRect.height]
                     store.update(r)
                 })
             }.frame(height: 245)
@@ -718,6 +721,20 @@ struct GCFEExamView: View {
 
     private func clock(_ seconds: Int) -> String {
         String(format: "%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
+    }
+
+    private func diagramRect(_ svg: String, in size: CGSize) -> CGRect {
+        guard let range = svg.range(of: #"viewBox="[^"]+""#, options: .regularExpression) else {
+            return CGRect(origin: .zero, size: size)
+        }
+        let parts = svg[range].dropFirst(9).dropLast().split(separator: " ").compactMap { Double($0) }
+        guard parts.count == 4, parts[2] > 0, parts[3] > 0 else {
+            return CGRect(origin: .zero, size: size)
+        }
+        let scale = min(size.width / parts[2], size.height / parts[3])
+        let width = parts[2] * scale, height = parts[3] * scale
+        return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2,
+                      width: width, height: height)
     }
 }
 
