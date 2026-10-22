@@ -5,6 +5,8 @@ import SwiftUI
 enum SimulatorID: String, Identifiable {
     case psychologyLaw
     case pmiCP
+    case gc
+    case fe
     var id: String { rawValue }
 }
 
@@ -25,7 +27,17 @@ struct SimulatorOffering: Identifiable {
                           title: "PMI Construction Professional (PMI-CP)",
                           subtitle: "Construction practice exam",
                           detail: "120 questions  •  230 minutes",
-                          imageName: "SimulaProMark")
+                          imageName: "PMICPMark"),
+        SimulatorOffering(id: .gc,
+                          title: "GC Business & Finance",
+                          subtitle: "General Contractor practice exam",
+                          detail: "120 questions  •  390 minutes",
+                          imageName: "GCMark"),
+        SimulatorOffering(id: .fe,
+                          title: "FE Mechanical",
+                          subtitle: "Engineering practice exam",
+                          detail: "110 questions  •  320 minutes",
+                          imageName: "FEMark")
     ]
 }
 
@@ -53,6 +65,12 @@ struct SimulaProRootView: View {
                     .id(sessionNumber)
             } else if selectedModule == .pmiCP && subscription.hasAccess {
                 PMICPExamView(onExit: { selectedModule = nil })
+                    .id(sessionNumber)
+            } else if selectedModule == .gc && subscription.hasAccess {
+                GCFEExamView(fe: false, onExit: { selectedModule = nil })
+                    .id(sessionNumber)
+            } else if selectedModule == .fe && subscription.hasAccess {
+                GCFEExamView(fe: true, onExit: { selectedModule = nil })
                     .id(sessionNumber)
             } else {
                 SimulaProCatalogView(offerings: SimulatorOffering.available,
