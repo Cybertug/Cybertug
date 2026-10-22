@@ -4,6 +4,7 @@ import SwiftUI
 /// Add future simulators to this registry when their native modules are ready.
 enum SimulatorID: String, Identifiable {
     case psychologyLaw
+    case pmiCP
     var id: String { rawValue }
 }
 
@@ -19,7 +20,12 @@ struct SimulatorOffering: Identifiable {
                           title: "Psychology Law",
                           subtitle: "Florida Laws & Rules",
                           detail: "45 questions  •  60 minutes",
-                          imageName: "PsychologyLawMark")
+                          imageName: "PsychologyLawMark"),
+        SimulatorOffering(id: .pmiCP,
+                          title: "PMI Construction Professional (PMI-CP)",
+                          subtitle: "Construction practice exam",
+                          detail: "120 questions  •  230 minutes",
+                          imageName: "SimulaProMark")
     ]
 }
 
@@ -44,6 +50,9 @@ struct SimulaProRootView: View {
         Group {
             if selectedModule == .psychologyLaw && subscription.hasAccess {
                 ExamRootView(onExit: { selectedModule = nil })
+                    .id(sessionNumber)
+            } else if selectedModule == .pmiCP && subscription.hasAccess {
+                PMICPExamView(onExit: { selectedModule = nil })
                     .id(sessionNumber)
             } else {
                 SimulaProCatalogView(offerings: SimulatorOffering.available,
@@ -262,4 +271,5 @@ struct SimulaProCatalogView: View {
         .accessibilityLabel("\(offering.title), \(offering.subtitle), \(subscription.hasAccess ? "open simulator" : "view subscription")")
     }
 }
+
 
