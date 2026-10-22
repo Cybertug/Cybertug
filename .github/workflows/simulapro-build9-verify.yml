@@ -1,5 +1,5 @@
 name: Simula Pro - Verify Internal Build 9
-# Read-only retry after Apple's transient API error.
+# Read-only retry with app-scoped group ownership verification.
 
 on:
   push:

@@ -56,14 +56,15 @@ def call_api(method, path, body=nil)
   response.body.to_s.empty? ? {} : JSON.parse(response.body)
 end
 
-app = call_api('GET', "/v1/apps/#{APP_ID}")['data']
-abort 'Wrong app bundle ID' unless app.dig('attributes','bundleId') == BUNDLE_ID
-groups = call_api('GET', '/v1/betaGroups?limit=200')['data']
+apps = call_api('GET', "/v1/apps?filter%5BbundleId%5D=#{BUNDLE_ID}&limit=200")['data']
+abort 'Wrong app bundle ID or app ID' unless apps.size == 1 && apps.first['id'] == APP_ID &&
+                                           apps.first.dig('attributes','bundleId') == BUNDLE_ID
+# This app-scoped endpoint proves the group's ownership without depending on
+# the betaGroups/{id}/app endpoint, which Apple intermittently returns as 404.
+groups = call_api('GET', "/v1/apps/#{APP_ID}/betaGroups?limit=200")['data']
 matches = groups.select { |g| g.dig('attributes','name') == GROUP_NAME && g.dig('attributes','isInternalGroup') == true }
 abort "Expected one internal group; found #{matches.size}" unless matches.size == 1
 group_id = matches.first.fetch('id')
-owning_app = call_api('GET', "/v1/betaGroups/#{group_id}/app")['data']
-abort 'Unexpected owning app' unless owning_app && owning_app['id'] == APP_ID
 
 builds_path = "/v1/builds?filter%5Bapp%5D=#{APP_ID}&limit=200"
 target = nil
@@ -91,7 +92,7 @@ if details.dig('attributes','internalBuildState') == 'MISSING_EXPORT_COMPLIANCE'
   puts "Saved export-compliance exemption for Build #{EXPECTED_BUILD}."
   details = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data']
 end
-group_data = call_api('GET', "/v1/betaGroups/#{group_id}")['data']
+group_data = matches.first
 puts "Build #{EXPECTED_BUILD}: audience=#{target.dig('attributes','buildAudienceType')}, processing=#{target.dig('attributes','processingState')}, internalBetaState=#{details.dig('attributes','internalBuildState')}"
 puts "Internal group automatic distribution=#{group_data.dig('attributes','hasAccessToAllBuilds')}"
 if group_data.dig('attributes','hasAccessToAllBuilds') != true
