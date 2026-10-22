@@ -49,7 +49,9 @@ def list(path)
 end
 
 def create(type, path, attributes, relationships)
-  api('POST', path, {data: {type: type, attributes: attributes, relationships: relationships}}).fetch('data')
+  data = {type: type, relationships: relationships}
+  data[:attributes] = attributes unless attributes.empty?
+  api('POST', path, {data: data}).fetch('data')
 end
 
 app_id = '6823960478'
@@ -65,18 +67,19 @@ end
 group_id = group.fetch('id')
 
 versions = list("/v1/subscriptionGroups/#{group_id}/versions?limit=200")
-if versions.any?
-  version = versions.find { |v| %w[PREPARE_FOR_SUBMISSION READY_FOR_REVIEW].include?(v.dig('attributes', 'state')) } || versions.first
-  version_id = version.fetch('id')
-  existing = list("/v1/subscriptionGroupVersions/#{version_id}/localizations?limit=200")
-  unless existing.any? { |x| x.dig('attributes', 'locale') == 'en-US' }
-    create('subscriptionGroupLocalizations', '/v2/subscriptionGroupLocalizations',
-           {name: 'Simula Pro Access', locale: 'en-US'},
-           {version: {data: {type: 'subscriptionGroupVersions', id: version_id}}})
-    puts 'Created en-US subscription group localization'
-  end
-else
-  puts 'No subscription group version returned; group localization needs review.'
+version = versions.find { |v| v.dig('attributes', 'state') == 'PREPARE_FOR_SUBMISSION' }
+unless version
+  version = create('subscriptionGroupVersions', '/v1/subscriptionGroupVersions', {},
+                   {subscriptionGroup: {data: {type: 'subscriptionGroups', id: group_id}}})
+  puts "Created subscription group version #{version.fetch('id')}"
+end
+version_id = version.fetch('id')
+existing = list("/v1/subscriptionGroupVersions/#{version_id}/localizations?limit=200")
+unless existing.any? { |x| x.dig('attributes', 'locale') == 'en-US' }
+  create('subscriptionGroupLocalizations', '/v2/subscriptionGroupLocalizations',
+         {name: 'Simula Pro Access', locale: 'en-US'},
+         {version: {data: {type: 'subscriptionGroupVersions', id: version_id}}})
+  puts 'Created en-US subscription group localization'
 end
 
 products = list("/v1/subscriptionGroups/#{group_id}/subscriptions?limit=200")
@@ -89,7 +92,7 @@ plans.each do |plan|
   unless product
     product = create('subscriptions', '/v1/subscriptions',
                      {name: plan.fetch(:name), productId: plan.fetch(:id), subscriptionPeriod: plan.fetch(:period),
-                      familySharable: false, groupLevel: 1, availableInAllTerritories: true,
+                      familySharable: false, groupLevel: 1,
                       reviewNote: 'One subscription unlocks the four original Simula Pro exam practice modules.'},
                      {group: {data: {type: 'subscriptionGroups', id: group_id}}})
     puts "Created #{plan.fetch(:id)}"
@@ -102,13 +105,21 @@ plans.each do |plan|
            {subscription: {data: {type: 'subscriptions', id: product_id}}})
     puts "Created en-US localization for #{plan.fetch(:id)}"
   end
+  availability = list("/v1/subscriptions/#{product_id}/planAvailabilities?limit=200")
+  unless availability.any? { |x| x.dig('attributes', 'planType') == 'UPFRONT' }
+    create('subscriptionPlanAvailabilities', '/v1/subscriptionPlanAvailabilities',
+           {planType: 'UPFRONT', availableInNewTerritories: false},
+           {subscription: {data: {type: 'subscriptions', id: product_id}},
+            availableTerritories: {data: [{type: 'territories', id: 'USA'}]}})
+    puts "Enabled USA up-front billing for #{plan.fetch(:id)}"
+  end
   price_points = list("/v1/subscriptions/#{product_id}/pricePoints?filter%5Bterritory%5D=USA&limit=200")
   point = price_points.find { |p| p.dig('attributes', 'customerPrice') == plan.fetch(:price) }
   abort "USA price point #{plan.fetch(:price)} unavailable for #{plan.fetch(:id)}" unless point
   existing_prices = list("/v1/subscriptions/#{product_id}/prices?filter%5Bterritory%5D=USA&limit=200")
   if existing_prices.empty?
     create('subscriptionPrices', '/v1/subscriptionPrices',
-           {startDate: nil},
+           {startDate: nil, planType: 'UPFRONT'},
            {subscription: {data: {type: 'subscriptions', id: product_id}},
             subscriptionPricePoint: {data: {type: 'subscriptionPricePoints', id: point.fetch('id')}}})
     puts "Set USA base price $#{plan.fetch(:price)} for #{plan.fetch(:id)}"
