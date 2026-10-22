@@ -1,0 +1,23 @@
+name: Simula Pro - subscription read-only audit
+
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/simulapro-subscription-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: macos-15
+    env:
+      APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+      APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect Apple subscription products and US prices
+        run: ruby psychology-law-ios/ci/audit_subscriptions.rb
+
