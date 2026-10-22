@@ -65,7 +65,10 @@ jobs:
           assert "@main\nstruct SimulaProApp: App" in home
           assert "SimulaProRootView()" in home
           assert 'title: "Psychology Law"' in home
+          assert 'title: "PMI Construction Professional (PMI-CP)"' in home
           assert "ExamRootView(onExit:" in home
+          assert "PMICPExamView(onExit:" in home
+          assert "PMICPExamView.swift in Sources" in project
           assert "backToSimulaPro" in exam
           assert "showExitConfirmation" in exam
           assert "store.resetForExit()" in exam
@@ -75,6 +78,22 @@ jobs:
           for folder in ["AppIcon.appiconset", "SimulaProMark.imageset", "PsychologyLawMark.imageset"]:
               assert (assets / folder / "Contents.json").is_file(), folder
           print("PASS: Simula Pro platform, Psychology Law routing, safe exit, existing bundle, two marks.")
+          PY
+      - name: Verify native PMI-CP module and exam settings
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          app = Path("psychology-law-ios/full-project/PsychologyLawNative")
+          source = (app / "PMICPExamView.swift").read_text()
+          assert 'https://pmi-cp-simulapro.pages.dev/api/questions' in source
+          assert "bank.total == 120" in source
+          assert '"C": 60, "S": 36, "T": 18, "G": 6' in source
+          assert "13_800" in source
+          assert "Set(bank.questions.map { $0.stem }).count == 120" in source
+          assert "UserDefaults.standard.set(data, forKey: key)" in source
+          assert "pmiCPExam" in source and "pmiCPResults" in source
+          print("PASS: native PMI-CP routing, 120 unique questions, 230 minutes, saved progress.")
           PY
       - name: Test subscription product access policy
         shell: bash
@@ -120,4 +139,5 @@ jobs:
           name: PsychologyLaw-Full325-iPhone-Simulator
           path: artifacts/
           if-no-files-found: warn
+
 
