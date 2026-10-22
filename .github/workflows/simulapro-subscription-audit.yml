@@ -1,4 +1,4 @@
-name: Simula Pro - subscription read-only audit
+name: Simula Pro - subscription metadata audit
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   audit:
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     env:
       APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
       APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
