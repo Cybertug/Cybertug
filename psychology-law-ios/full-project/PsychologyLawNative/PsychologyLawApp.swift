@@ -45,7 +45,19 @@ struct SimulatorOffering: Identifiable {
 struct SimulaProApp: App {
     var body: some Scene {
         WindowGroup {
+#if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-previewGC") {
+                GCFEExamView(fe: false, onExit: {})
+                    .preferredColorScheme(.light)
+            } else if ProcessInfo.processInfo.arguments.contains("-previewFE") {
+                GCFEExamView(fe: true, onExit: {})
+                    .preferredColorScheme(.light)
+            } else {
+                SimulaProRootView().preferredColorScheme(.light)
+            }
+#else
             SimulaProRootView().preferredColorScheme(.light)
+#endif
         }
     }
 }
