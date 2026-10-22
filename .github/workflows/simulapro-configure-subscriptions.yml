@@ -1,4 +1,4 @@
-name: Simula Pro - configure Apple subscriptions
+name: Simula Pro - configure Apple subscriptions (retry)
 
 on:
   push:
