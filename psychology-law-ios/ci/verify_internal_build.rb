@@ -88,39 +88,29 @@ end
 group_data = call_api('GET', "/v1/betaGroups/#{group_id}")['data']
 puts "Build #{EXPECTED_BUILD}: audience=#{target.dig('attributes','buildAudienceType')}, processing=#{target.dig('attributes','processingState')}, internalBetaState=#{details.dig('attributes','internalBuildState')}"
 puts "Internal group automatic distribution=#{group_data.dig('attributes','hasAccessToAllBuilds')}"
-existing = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
-puts "Internal group linked builds=#{existing.map { |b| b.dig('attributes','version') }.join(', ')}"
-if group_data.dig('attributes','hasAccessToAllBuilds') == true
-  puts 'Automatic internal distribution is enabled; waiting for Apple to assign the build.'
-  18.times do |attempt|
-    current = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
-    break if current.any? { |b| b['id'] == target.fetch('id') }
-    state = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data'].dig('attributes','internalBuildState')
-    puts "Build #{EXPECTED_BUILD} internal state=#{state}; assignment pending #{attempt+1}/18"
-    sleep 10 if attempt < 17
-  end
-  current = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
-  abort "Apple has not made Build #{EXPECTED_BUILD} available to automatic group yet" unless current.any? { |b| b['id'] == target.fetch('id') }
-  testers = call_api('GET', "/v1/betaGroups/#{group_id}/betaTesters?limit=200")['data']
-  names = testers.map { |t| t.dig('attributes','firstName').to_s.strip.downcase }
-  abort 'Luciano or Aixa missing from internal tester group' unless %w[luciano aixa].all? { |name| names.include?(name) }
-  state = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data'].dig('attributes','internalBuildState')
-  puts "SUCCESS: iOS Build #{EXPECTED_BUILD} available in SimulaPro Internal for Luciano and Aixa (#{testers.length} testers, state=#{state})."
-  exit 0
-end
-unless existing.any? { |b| b['id'] == target.fetch('id') }
-  call_api('POST', "/v1/betaGroups/#{group_id}/relationships/builds", {
-    data: [{type: 'builds', id: target.fetch('id')}]
+if group_data.dig('attributes','hasAccessToAllBuilds') != true
+  call_api('POST', "/v1/builds/#{target.fetch('id')}/relationships/betaGroups", {
+    data: [{type: 'betaGroups', id: group_id}]
   })
-  puts "Build #{EXPECTED_BUILD} linked to internal group."
-else
-  puts "Build #{EXPECTED_BUILD} was already in the internal group."
+  puts "Build #{EXPECTED_BUILD} assigned to the existing internal group."
 end
 
-verify = call_api('GET', "/v1/betaGroups/#{group_id}/builds?limit=200")['data']
-abort 'Verification failed: build not in group' unless verify.any? { |b| b['id'] == target['id'] }
-testers = call_api('GET', "/v1/betaGroups/#{group_id}/betaTesters?limit=200")['data']
+# Read the relationship from the build side. Apple's group/build listing can
+# transiently answer 404 even while the group and the processed build exist.
+linked = false
+18.times do |attempt|
+  build = call_api('GET', "/v1/builds/#{target.fetch('id')}?include=betaGroups")
+  relationships = build.dig('data','relationships','betaGroups','data') || []
+  included = build.fetch('included', []).select { |item| item['type'] == 'betaGroups' }
+  linked = (relationships + included).any? { |item| item['id'] == group_id }
+  break if linked
+  puts "Build #{EXPECTED_BUILD} group assignment pending #{attempt+1}/18"
+  sleep 10 if attempt < 17
+end
+abort "Build #{EXPECTED_BUILD} is not linked to SimulaPro Internal" unless linked
+testers = call_api('GET', "/v1/betaTesters?filter%5BbetaGroups%5D=#{group_id}&limit=200")['data']
 names = testers.map { |t| t.dig('attributes','firstName').to_s.strip.downcase }
 abort 'Luciano or Aixa missing from internal tester group' unless %w[luciano aixa].all? { |name| names.include?(name) }
-puts "SUCCESS: iOS version 1.0.0 Build #{EXPECTED_BUILD} is available in SimulaPro Internal for Luciano and Aixa (#{testers.length} internal testers)."
+state = call_api('GET', "/v1/builds/#{target.fetch('id')}/buildBetaDetail")['data'].dig('attributes','internalBuildState')
+puts "SUCCESS: iOS version 1.0.0 Build #{EXPECTED_BUILD} is available in SimulaPro Internal for Luciano and Aixa (#{testers.length} internal testers, state=#{state})."
 
