@@ -40,7 +40,13 @@ def call_api(method, path, body=nil)
   req['Accept'] = 'application/json'
   req['Content-Type'] = 'application/json' if body
   req.body = JSON.generate(body) if body
-  response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 20, read_timeout: 35) { |h| h.request(req) }
+  response = nil
+  5.times do |attempt|
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 20, read_timeout: 35) { |h| h.request(req) }
+    break unless [429, 500, 502, 503, 504].include?(response.code.to_i) && attempt < 4
+    puts "Apple API temporarily unavailable (HTTP #{response.code}); retry #{attempt+1}/4."
+    sleep 3 * (attempt + 1)
+  end
   unless [200,201,204].include?(response.code.to_i)
     errors = (JSON.parse(response.body.to_s)['errors'] rescue [])
     codes = Array(errors).map { |e| e['code'].to_s.gsub(/[^A-Za-z0-9_-]/, '') }.join(', ')
