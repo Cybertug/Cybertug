@@ -1,0 +1,23 @@
+name: Simula Pro - configure Apple subscriptions
+
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/simulapro-configure-subscriptions.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: macos-15
+    env:
+      APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+      APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Simula Pro monthly and yearly subscription products
+        run: ruby psychology-law-ios/ci/configure_subscriptions.rb
+
