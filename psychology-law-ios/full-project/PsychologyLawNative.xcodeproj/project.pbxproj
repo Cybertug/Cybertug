@@ -14,6 +14,7 @@
 		B10000000000000000000007 /* SubscriptionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* SubscriptionPolicy.swift */; };
 		B10000000000000000000008 /* SubscriptionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* SubscriptionStore.swift */; };
 		B10000000000000000000009 /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* SubscriptionView.swift */; };
+		B1000000000000000000000A /* PMICPExamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A /* PMICPExamView.swift */; };
 		B20000000000000000000001 /* questions.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* questions.json */; };
 		B20000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -28,6 +29,7 @@
 		A10000000000000000000007 /* SubscriptionPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionPolicy.swift; sourceTree = "<group>"; };
 		A10000000000000000000008 /* SubscriptionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000009 /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
+		A1000000000000000000000A /* PMICPExamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PMICPExamView.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* questions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = questions.json; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C10000000000000000000007 /* PsychologyLawNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PsychologyLawNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,7 +41,7 @@
 
 /* Begin PBXGroup section */
 		C10000000000000000000002 /* Root */ = {isa = PBXGroup; children = (C10000000000000000000003 /* PsychologyLawNative */, C10000000000000000000005 /* Products */); sourceTree = "<group>"; };
-		C10000000000000000000003 /* PsychologyLawNative */ = {isa = PBXGroup; children = (A10000000000000000000001 /* PsychologyLawApp.swift */, A10000000000000000000002 /* ExamModels.swift */, A10000000000000000000003 /* ExamEngine.swift */, A10000000000000000000004 /* ExamStore.swift */, A10000000000000000000005 /* PearsonUI.swift */, A10000000000000000000006 /* ExamRootView.swift */, A10000000000000000000007 /* SubscriptionPolicy.swift */, A10000000000000000000008 /* SubscriptionStore.swift */, A10000000000000000000009 /* SubscriptionView.swift */, C10000000000000000000004 /* Resources */, A20000000000000000000002 /* Assets.xcassets */); path = PsychologyLawNative; sourceTree = "<group>"; };
+		C10000000000000000000003 /* PsychologyLawNative */ = {isa = PBXGroup; children = (A10000000000000000000001 /* PsychologyLawApp.swift */, A10000000000000000000002 /* ExamModels.swift */, A10000000000000000000003 /* ExamEngine.swift */, A10000000000000000000004 /* ExamStore.swift */, A10000000000000000000005 /* PearsonUI.swift */, A10000000000000000000006 /* ExamRootView.swift */, A10000000000000000000007 /* SubscriptionPolicy.swift */, A10000000000000000000008 /* SubscriptionStore.swift */, A10000000000000000000009 /* SubscriptionView.swift */, A1000000000000000000000A /* PMICPExamView.swift */, C10000000000000000000004 /* Resources */, A20000000000000000000002 /* Assets.xcassets */); path = PsychologyLawNative; sourceTree = "<group>"; };
 		C10000000000000000000004 /* Resources */ = {isa = PBXGroup; children = (A20000000000000000000001 /* questions.json */); path = Resources; sourceTree = "<group>"; };
 		C10000000000000000000005 /* Products */ = {isa = PBXGroup; children = (C10000000000000000000007 /* PsychologyLawNative.app */); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
@@ -57,7 +59,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		C10000000000000000000008 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000001 /* PsychologyLawApp.swift in Sources */, B10000000000000000000002 /* ExamModels.swift in Sources */, B10000000000000000000003 /* ExamEngine.swift in Sources */, B10000000000000000000004 /* ExamStore.swift in Sources */, B10000000000000000000005 /* PearsonUI.swift in Sources */, B10000000000000000000006 /* ExamRootView.swift in Sources */, B10000000000000000000007 /* SubscriptionPolicy.swift in Sources */, B10000000000000000000008 /* SubscriptionStore.swift in Sources */, B10000000000000000000009 /* SubscriptionView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000008 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B10000000000000000000001 /* PsychologyLawApp.swift in Sources */, B10000000000000000000002 /* ExamModels.swift in Sources */, B10000000000000000000003 /* ExamEngine.swift in Sources */, B10000000000000000000004 /* ExamStore.swift in Sources */, B10000000000000000000005 /* PearsonUI.swift in Sources */, B10000000000000000000006 /* ExamRootView.swift in Sources */, B10000000000000000000007 /* SubscriptionPolicy.swift in Sources */, B10000000000000000000008 /* SubscriptionStore.swift in Sources */, B10000000000000000000009 /* SubscriptionView.swift in Sources */, B1000000000000000000000A /* PMICPExamView.swift in Sources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -140,4 +142,5 @@
 	};
 	rootObject = C10000000000000000000001 /* Project object */;
 }
+
 
