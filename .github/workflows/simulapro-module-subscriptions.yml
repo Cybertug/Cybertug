@@ -1,0 +1,38 @@
+name: Simula Pro - per-simulator subscription configuration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/simulapro-module-subscriptions.yml'
+      - 'psychology-law-ios/ci/configure_module_subscriptions.rb'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: simulapro-apple-subscription-metadata
+  cancel-in-progress: false
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate setup script
+        run: ruby -c psychology-law-ios/ci/configure_module_subscriptions.rb
+      - name: Configure metadata and availability without changing prices
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: ruby psychology-law-ios/ci/configure_module_subscriptions.rb
+      - name: Save read-back verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulaPro-Module-Subscription-Report
+          path: artifacts/module-subscriptions-report.json
+          if-no-files-found: warn
