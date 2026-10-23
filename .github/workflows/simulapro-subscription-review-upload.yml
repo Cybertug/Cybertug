@@ -1,0 +1,46 @@
+name: Simula Pro - verified subscription review screenshots upload
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/simulapro-subscription-review-upload.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: simulapro-apple-subscription-metadata
+  cancel-in-progress: false
+
+jobs:
+  upload-review-screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the exact visually verified screenshot artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SimulaPro-Subscription-Review-Screenshots
+          run-id: 40007039273
+          github-token: ${{ github.token }}
+          path: verified-review-screenshots
+      - name: Validate uploader syntax
+        run: ruby -c psychology-law-ios/ci/upload_subscription_review_screenshots.rb
+      - name: Upload and read back Apple review screenshot status
+        env:
+          APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          SUBSCRIPTION_SCREENSHOT_DIR: verified-review-screenshots
+        run: ruby psychology-law-ios/ci/upload_subscription_review_screenshots.rb
+      - name: Save final read-back report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulaPro-Verified-Subscription-Metadata
+          path: artifacts/module-subscriptions-report.json
+          if-no-files-found: warn
