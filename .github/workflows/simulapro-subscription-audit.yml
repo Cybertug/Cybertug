@@ -1,10 +1,12 @@
 name: Simula Pro - subscription metadata audit
 
 on:
+  workflow_dispatch:
   push:
     branches: [psychology-law-ios-native]
     paths:
       - '.github/workflows/simulapro-subscription-audit.yml'
+      - 'psychology-law-ios/ci/audit_subscriptions.rb'
 
 permissions:
   contents: read
@@ -12,12 +14,12 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
       APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
       APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect Apple subscription products and US prices
+      - name: Inspect current Apple subscription products and US prices
         run: ruby psychology-law-ios/ci/audit_subscriptions.rb
-
