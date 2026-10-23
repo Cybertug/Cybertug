@@ -1,0 +1,89 @@
+name: Simula Pro - subscription review screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/simulapro-subscription-review-capture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare an isolated debug-only screenshot build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp -R psychology-law-ios/full-project "$RUNNER_TEMP/review-project"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'review-project/PsychologyLawNative/PsychologyLawApp.swift'
+          text = path.read_text()
+          anchor = '#if DEBUG\n            if ProcessInfo.processInfo.arguments.contains("-previewGC") {'
+          replacement = '''#if DEBUG
+                      if ProcessInfo.processInfo.arguments.contains("-reviewPsychology") {
+                          ExamRootView(onExit: {}).preferredColorScheme(.light)
+                      } else if ProcessInfo.processInfo.arguments.contains("-reviewPMICP") {
+                          PMICPExamView(onExit: {}).preferredColorScheme(.light)
+                      } else if ProcessInfo.processInfo.arguments.contains("-previewGC") {'''
+          assert text.count(anchor) == 1
+          path.write_text(text.replace(anchor, replacement))
+          print('Only debug launch routes in a temporary copy were added. Production entitlement gates are unchanged.')
+          PY
+      - name: Build actual module views for iPhone Simulator
+        run: |
+          set -euo pipefail
+          xcodebuild -project "$RUNNER_TEMP/review-project/PsychologyLawNative.xcodeproj" \
+            -scheme PsychologyLawNative -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/review-build" \
+            CODE_SIGNING_ALLOWED=NO build > artifacts/review-build.log 2>&1 || {
+              tail -n 100 artifacts/review-build.log
+              exit 1
+            }
+      - name: Capture the content offered by each subscription
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/review-devices.json"
+          UDID=$(python3 -c 'import json,sys; ds=[x for v in json.load(open(sys.argv[1]))["devices"].values() for x in v if x.get("isAvailable") and "iPhone" in x["name"]]; print(next((x["udid"] for x in ds if "Pro Max" in x["name"]),ds[0]["udid"]))' "$RUNNER_TEMP/review-devices.json")
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
+          xcrun simctl install "$UDID" "$RUNNER_TEMP/review-build/Build/Products/Debug-iphonesimulator/PsychologyLawNative.app"
+          DATA="$(xcrun simctl get_app_container "$UDID" com.simulapro.psychologylaw data)"
+          for MODULE in psychologyLaw pmiCP gc fe; do
+            case "$MODULE" in
+              psychologyLaw) ARG=-reviewPsychology ;;
+              pmiCP) ARG=-reviewPMICP ;;
+              gc) ARG=-previewGC ;;
+              fe) ARG=-previewFE ;;
+            esac
+            xcrun simctl terminate "$UDID" com.simulapro.psychologylaw || true
+            xcrun simctl launch "$UDID" com.simulapro.psychologylaw "$ARG"
+            sleep 20
+            if [[ "$MODULE" == gc || "$MODULE" == fe ]]; then
+              BANK="$DATA/Library/Caches/simulapro_${MODULE}_questions_v1.json"
+              for i in {1..30}; do
+                test -s "$BANK" && break
+                sleep 2
+              done
+              test -s "$BANK"
+            fi
+            xcrun simctl io "$UDID" screenshot "artifacts/review-$MODULE.png"
+          done
+          git diff --exit-code
+      - name: Save screenshots for visual verification before any Apple upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimulaPro-Subscription-Review-Screenshots
+          path: artifacts/
+          if-no-files-found: error
