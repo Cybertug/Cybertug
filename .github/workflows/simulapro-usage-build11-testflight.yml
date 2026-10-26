@@ -1,0 +1,63 @@
+name: Simula Pro - mobile usage TestFlight Build 11
+
+on:
+  push:
+    branches: [psychology-law-ios-native]
+    paths:
+      - '.github/workflows/simulapro-usage-build11-testflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      APPSTORE_API_KEY_ID: ${{ vars.APPSTORE_API_KEY_ID }}
+      APPSTORE_ISSUER_ID: ${{ vars.APPSTORE_ISSUER_ID }}
+      APPSTORE_TEAM_ID: ${{ vars.APPSTORE_TEAM_ID }}
+      APPSTORE_BUNDLE_ID: ${{ vars.APPSTORE_BUNDLE_ID }}
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+      RELEASE_VERSION: 1.0.0
+      RELEASE_BUILD_NUMBER: '11'
+      RELEASE_CONFIRM: FULL_BUILD_APPROVED
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify existing app and Psychology Law bank
+        run: python3 psychology-law-ios/ci/release_preflight.py
+      - name: Verify four native modules and individual icons
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          app = Path("psychology-law-ios/full-project/PsychologyLawNative")
+          home = (app / "PsychologyLawApp.swift").read_text()
+          exam = (app / "GCFEExamView.swift").read_text()
+          project = Path("psychology-law-ios/full-project/PsychologyLawNative.xcodeproj/project.pbxproj").read_text()
+          for route in ("ExamRootView(onExit:", "PMICPExamView(onExit:",
+                        "GCFEExamView(fe: false", "GCFEExamView(fe: true"):
+              assert route in home, route
+          for folder in ("PsychologyLawMark", "PMICPMark", "GCMark", "FEMark"):
+              assert (app / "Assets.xcassets" / (folder + ".imageset") / "Contents.json").is_file(), folder
+          assert "GCFEExamView.swift in Sources" in project
+          assert "https://gc.simulapro.us/" in exam
+          assert "https://fe.simulapro.us/assets/bank.js" in exam
+          assert "https://fe.simulapro.us/assets/advanced-bank.js" in exam
+          assert "records.count == 242" in exam and "records.count == 4073" in exam
+          assert "23_400" in exam and "19_200" in exam
+          for folder in ("SimulaProMark", "PsychologyLawMark", "PMICPMark", "GCMark", "FEMark"):
+              import json, struct
+              imageset = app / "Assets.xcassets" / (folder + ".imageset")
+              meta = json.loads((imageset / "Contents.json").read_text())
+              assert meta["images"][0]["filename"] == folder + ".png"
+              data = (imageset / (folder + ".png")).read_bytes()
+              assert data[:8] == bytes((137,80,78,71,13,10,26,10))
+              assert struct.unpack(">II", data[16:24]) == (1024, 1024)
+          print("PASS: existing modules preserved; five new PNG icons validated.")
+          PY
+      - name: Upload signed Simula Pro Build 11
+        run: bash psychology-law-ios/ci/upload_testflight.sh
+      - name: Verify Build 11 in existing internal TestFlight group
+        run: ruby psychology-law-ios/ci/verify_internal_build.rb
+
+
