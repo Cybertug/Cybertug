@@ -58,6 +58,7 @@ struct SimulaProApp: App {
 
 struct SimulaProRootView: View {
     @StateObject private var subscription = SubscriptionStore()
+    @StateObject private var usage = UsageAccountStore()
     @State private var selectedModule: SimulatorID?
     @State private var paywallModule: SimulatorID = .psychologyLaw
     @State private var sessionNumber = 0
@@ -67,7 +68,11 @@ struct SimulaProRootView: View {
     @ViewBuilder
     var body: some View {
         Group {
-            if selectedModule == .psychologyLaw && subscription.hasAccess(to: "psychologyLaw") {
+            if usage.isChecking {
+                ProgressView("Checking your SimulaPro account…")
+            } else if usage.user == nil {
+                UsageSignInView(store: usage)
+            } else if selectedModule == .psychologyLaw && subscription.hasAccess(to: "psychologyLaw") {
                 ExamRootView(onExit: { selectedModule = nil }).id(sessionNumber)
             } else if selectedModule == .pmiCP && subscription.hasAccess(to: "pmiCP") {
                 PMICPExamView(onExit: { selectedModule = nil }).id(sessionNumber)
@@ -78,6 +83,8 @@ struct SimulaProRootView: View {
             } else {
                 SimulaProCatalogView(offerings: SimulatorOffering.available,
                                      subscription: subscription,
+                                     accountName: usage.user?.name ?? "",
+                                     onSignOut: { selectedModule = nil; Task { await usage.signOut() } },
                                      onSubscription: { showsSubscription = true }) { module in
                     if subscription.hasAccess(to: module.rawValue) {
                         sessionNumber += 1
@@ -100,9 +107,17 @@ struct SimulaProRootView: View {
             }
 #endif
             await subscription.start()
+            await usage.restore()
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active { Task { await subscription.refreshEntitlements() } }
+            usage.setForeground(phase == .active, module: selectedModule?.rawValue ?? "catalog")
+        }
+        .onChange(of: selectedModule?.rawValue) { module in
+            usage.setForeground(scenePhase == .active, module: module ?? "catalog")
+        }
+        .onChange(of: usage.user?.id) { _ in
+            usage.setForeground(scenePhase == .active, module: selectedModule?.rawValue ?? "catalog")
         }
         .onChange(of: subscription.activeProductIDs) { _ in
             if let module = selectedModule, !subscription.hasAccess(to: module.rawValue) {
@@ -118,6 +133,8 @@ struct SimulaProRootView: View {
 struct SimulaProCatalogView: View {
     let offerings: [SimulatorOffering]
     @ObservedObject var subscription: SubscriptionStore
+    let accountName: String
+    let onSignOut: () -> Void
     let onSubscription: () -> Void
     let onOpen: (SimulatorID) -> Void
 
@@ -140,6 +157,11 @@ struct SimulaProCatalogView: View {
                                 .foregroundColor(ink.opacity(0.73))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack {
+                            Text("Signed in: " + accountName).font(.footnote).foregroundColor(.secondary)
+                            Spacer()
+                            Button("Sign out", action: onSignOut).font(.footnote)
+                        }
                         Button(action: onSubscription) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 5) {
@@ -273,3 +295,237 @@ struct SimulaProCatalogView: View {
         .accessibilityLabel("\(offering.title), \(offering.subtitle), \(unlocked ? "open simulator" : "view subscription")")
     }
 }
+
+private struct UsageIdentity: Codable {
+    let id: String
+    let name: String
+    let email: String
+}
+
+private struct UsageEvent: Codable {
+    let id: String
+    let userID: String
+    let module: String
+    let seconds: Int
+    let endedAt: String
+}
+
+@MainActor
+private final class UsageAccountStore: ObservableObject {
+    @Published private(set) var user: UsageIdentity?
+    @Published private(set) var isChecking = true
+    @Published private(set) var isBusy = false
+    @Published var errorMessage: String?
+
+    private let baseURL = URL(string: "https://simulapro.us")!
+    private let savedUserKey = "simulapro.mobileUser.v1"
+    private let savedEventsKey = "simulapro.mobileUsageEvents.v1"
+    private let savedCSRFKey = "simulapro.mobileCSRF.v1"
+    private var csrf = ""
+    private var events: [UsageEvent] = []
+    private var lastTick: TimeInterval?
+    private var module = "catalog"
+    private var foreground = false
+    private var ticksSinceUpload = 0
+    private var uploading = false
+    private var timer: Timer?
+
+    init() {
+        if let data = UserDefaults.standard.data(forKey: savedUserKey) {
+            user = try? JSONDecoder().decode(UsageIdentity.self, from: data)
+        }
+        if let data = UserDefaults.standard.data(forKey: savedEventsKey) {
+            events = (try? JSONDecoder().decode([UsageEvent].self, from: data)) ?? []
+        }
+        csrf = UserDefaults.standard.string(forKey: savedCSRFKey) ?? ""
+        timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.tick() }
+        }
+    }
+
+    func restore() async {
+        var request = URLRequest(url: baseURL.appendingPathComponent("/api/customer/me"))
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let response = response as? HTTPURLResponse else { isChecking = false; return }
+            if response.statusCode == 200,
+               let result = try? JSONDecoder().decode(AccountResponse.self, from: data) {
+                user = result.user
+                csrf = result.csrf ?? ""
+                saveAccount()
+                if user != nil { Task { await flush() } }
+            } else if response.statusCode == 401 || response.statusCode == 200 {
+                user = nil
+                csrf = ""
+                saveAccount()
+            }
+        } catch {
+            // Keep a previously signed-in user's local access and queue usage offline.
+        }
+        isChecking = false
+    }
+
+    func login(email: String, password: String) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        errorMessage = nil
+        var request = URLRequest(url: baseURL.appendingPathComponent("/api/customer/login"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(baseURL.absoluteString, forHTTPHeaderField: "Origin")
+        request.setValue("portal", forHTTPHeaderField: "X-SimulaPro")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["email": email, "password": password])
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let response = response as? HTTPURLResponse, response.statusCode == 200,
+                  let result = try? JSONDecoder().decode(AccountResponse.self, from: data),
+                  let identity = result.user, let token = result.csrf else {
+                errorMessage = "Could not sign in. Check your email and password."
+                return
+            }
+            user = identity
+            csrf = token
+            saveAccount()
+            setForeground(true, module: module)
+            Task { await flush() }
+        } catch {
+            errorMessage = "Could not connect to SimulaPro. Check your connection."
+        }
+    }
+
+    func signOut() async {
+        settle()
+        foreground = false
+        lastTick = nil
+        await flush()
+        let token = csrf
+        var request = URLRequest(url: baseURL.appendingPathComponent("/api/customer/logout"))
+        request.httpMethod = "POST"
+        request.setValue(baseURL.absoluteString, forHTTPHeaderField: "Origin")
+        request.setValue("portal", forHTTPHeaderField: "X-SimulaPro")
+        request.setValue(token, forHTTPHeaderField: "X-CSRF-Token")
+        _ = try? await URLSession.shared.data(for: request)
+        for cookie in HTTPCookieStorage.shared.cookies(for: baseURL) ?? [] {
+            if cookie.name == "__Host-sp_session" { HTTPCookieStorage.shared.deleteCookie(cookie) }
+        }
+        user = nil
+        csrf = ""
+        saveAccount()
+    }
+
+    func setForeground(_ active: Bool, module nextModule: String) {
+        settle()
+        module = nextModule
+        foreground = active && user != nil
+        lastTick = foreground ? ProcessInfo.processInfo.systemUptime : nil
+        if !foreground { Task { await flush() } }
+    }
+
+    private func tick() {
+        settle()
+        ticksSinceUpload += 1
+        if ticksSinceUpload >= 4 {
+            ticksSinceUpload = 0
+            Task { await flush() }
+        }
+    }
+
+    private func settle() {
+        guard foreground, let identity = user, let start = lastTick else { return }
+        let uptime = ProcessInfo.processInfo.systemUptime
+        lastTick = uptime
+        let seconds = min(60, Int((uptime - start).rounded(.down)))
+        guard seconds > 0 else { return }
+        events.append(UsageEvent(id: UUID().uuidString, userID: identity.id,
+                                 module: module, seconds: seconds,
+                                 endedAt: ISO8601DateFormatter().string(from: Date())))
+        if events.count > 3000 { events.removeFirst(events.count - 3000) }
+        saveEvents()
+    }
+
+    private func flush() async {
+        guard !uploading, let identity = user, !csrf.isEmpty else { return }
+        let oldest = Date().addingTimeInterval(-89 * 86400)
+        events.removeAll { (ISO8601DateFormatter().date(from: $0.endedAt) ?? .distantPast) < oldest }
+        saveEvents()
+        let pending = Array(events.filter { $0.userID == identity.id }.prefix(60))
+        guard !pending.isEmpty else { return }
+        uploading = true
+        defer { uploading = false }
+        var request = URLRequest(url: baseURL.appendingPathComponent("/api/mobile/usage"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(baseURL.absoluteString, forHTTPHeaderField: "Origin")
+        request.setValue("portal", forHTTPHeaderField: "X-SimulaPro")
+        request.setValue(csrf, forHTTPHeaderField: "X-CSRF-Token")
+        request.httpBody = try? JSONEncoder().encode(["events": pending])
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if (response as? HTTPURLResponse)?.statusCode == 200 {
+                let ids = Set(pending.map(\.id))
+                events.removeAll { ids.contains($0.id) }
+                saveEvents()
+            } else if (response as? HTTPURLResponse)?.statusCode == 401 {
+                await restore()
+            }
+        } catch {
+            // Keep the queue until the next foreground period or connection.
+        }
+    }
+
+    private func saveAccount() {
+        UserDefaults.standard.set(try? JSONEncoder().encode(user), forKey: savedUserKey)
+        UserDefaults.standard.set(csrf, forKey: savedCSRFKey)
+    }
+    private func saveEvents() {
+        UserDefaults.standard.set(try? JSONEncoder().encode(events), forKey: savedEventsKey)
+    }
+    private struct AccountResponse: Decodable {
+        let user: UsageIdentity?
+        let csrf: String?
+    }
+}
+
+private struct UsageSignInView: View {
+    @ObservedObject var store: UsageAccountStore
+    @State private var email = ""
+    @State private var password = ""
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("Sign in to SimulaPro").font(.largeTitle.bold())
+                    Text("Use your SimulaPro account to connect your app activity to your profile. Your Apple subscription still controls access to each simulator.")
+                        .foregroundColor(.secondary)
+                    TextField("Email address", text: $email)
+                        .keyboardType(.emailAddress).textContentType(.emailAddress)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .padding().background(.white).clipShape(RoundedRectangle(cornerRadius: 10))
+                    SecureField("Password", text: $password)
+                        .textContentType(.password)
+                        .padding().background(.white).clipShape(RoundedRectangle(cornerRadius: 10))
+                    Button {
+                        Task { await store.login(email: email, password: password) }
+                    } label: {
+                        Text(store.isBusy ? "Signing in…" : "Sign in")
+                            .frame(maxWidth: .infinity).padding()
+                    }
+                    .buttonStyle(.borderedProminent).disabled(store.isBusy || email.isEmpty || password.isEmpty)
+                    if let message = store.errorMessage {
+                        Text(message).foregroundColor(.red).accessibilityIdentifier("signInError")
+                    }
+                    Link("Create an account or reset your password", destination: URL(string: "https://simulapro.us/account")!)
+                    Text("The app sends active use time to SimulaPro for the administrator's usage report. Exam answers are not sent.")
+                        .font(.footnote).foregroundColor(.secondary)
+                }
+                .padding(24)
+            }
+            .background(Color(red: 0.95, green: 0.967, blue: 0.988))
+            .navigationTitle("SimulaPro")
+        }
+    }
+}
+
