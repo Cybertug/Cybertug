@@ -63,6 +63,7 @@ struct SimulaProRootView: View {
     @State private var paywallModule: SimulatorID = .psychologyLaw
     @State private var sessionNumber = 0
     @State private var showsSubscription = false
+    @State private var selectedArea: NativeAccountArea = .overview
     @Environment(\.scenePhase) private var scenePhase
 
     @ViewBuilder
@@ -81,17 +82,34 @@ struct SimulaProRootView: View {
             } else if selectedModule == .fe && subscription.hasAccess(to: "fe") {
                 GCFEExamView(fe: true, onExit: { selectedModule = nil }).id(sessionNumber)
             } else {
-                SimulaProCatalogView(offerings: SimulatorOffering.available,
-                                     subscription: subscription,
-                                     accountName: usage.user?.name ?? "",
-                                     onSignOut: { selectedModule = nil; Task { await usage.signOut() } },
-                                     onSubscription: { showsSubscription = true }) { module in
-                    if subscription.hasAccess(to: module.rawValue) {
-                        sessionNumber += 1
-                        selectedModule = module
-                    } else {
-                        paywallModule = module
-                        showsSubscription = true
+                VStack(spacing: 0) {
+                    Picker("Account area", selection: $selectedArea) {
+                        Text("Overview").tag(NativeAccountArea.overview)
+                        Text("My exams").tag(NativeAccountArea.exams)
+                        Text("Store").tag(NativeAccountArea.store)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    switch selectedArea {
+                    case .overview:
+                        AccountDashboardView(accountName: usage.user?.name ?? "",
+                                             hasNativeAccess: { subscription.hasAccess(to: $0.rawValue) },
+                                             onOpen: openModule,
+                                             onSignOut: { Task { await usage.signOut() } })
+                    case .exams:
+                        SimulaProCatalogView(offerings: SimulatorOffering.available,
+                                             subscription: subscription,
+                                             accountName: usage.user?.name ?? "",
+                                             onSignOut: { selectedModule = nil; Task { await usage.signOut() } },
+                                             onSubscription: { showsSubscription = true },
+                                             onOpen: openModule)
+                    case .store:
+                        NativeStoreView(offerings: SimulatorOffering.available) { module in
+                            paywallModule = module
+                            showsSubscription = true
+                        }
                     }
                 }
             }
@@ -128,6 +146,20 @@ struct SimulaProRootView: View {
             SubscriptionView(store: subscription, module: paywallModule.rawValue)
         }
     }
+
+    private func openModule(_ module: SimulatorID) {
+        if subscription.hasAccess(to: module.rawValue) {
+            sessionNumber += 1
+            selectedModule = module
+        } else {
+            paywallModule = module
+            showsSubscription = true
+        }
+    }
+}
+
+private enum NativeAccountArea: Hashable {
+    case overview, exams, store
 }
 
 struct SimulaProCatalogView: View {
@@ -138,12 +170,12 @@ struct SimulaProCatalogView: View {
     let onSubscription: () -> Void
     let onOpen: (SimulatorID) -> Void
 
-    private let ink = Color(red: 0.075, green: 0.145, blue: 0.31)
-    private let blue = Color(red: 0.075, green: 0.29, blue: 0.77)
+    private let ink = Color(red: 0.11, green: 0.11, blue: 0.13)
+    private let blue = Color(red: 0.071, green: 0.188, blue: 0.373)
 
     var body: some View {
         ZStack {
-            Color(red: 0.95, green: 0.967, blue: 0.988).ignoresSafeArea()
+            Color(red: 0.98, green: 0.98, blue: 0.985).ignoresSafeArea()
             VStack(spacing: 0) {
                 brandHeader
                 ScrollView {
@@ -235,7 +267,7 @@ struct SimulaProCatalogView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Simula Pro")
+                Text("SimulaPro")
                     .font(.system(size: 23, weight: .bold, design: .rounded)).foregroundColor(.white)
                 Text("Your exam simulator platform")
                     .font(.system(size: 12, weight: .medium)).foregroundColor(.white.opacity(0.81))
@@ -244,11 +276,7 @@ struct SimulaProCatalogView: View {
         }
         .padding(.horizontal, 20).padding(.vertical, 15)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LinearGradient(
-            colors: [Color(red: 0.045, green: 0.16, blue: 0.44),
-                     Color(red: 0.11, green: 0.25, blue: 0.77),
-                     Color(red: 0.27, green: 0.14, blue: 0.68)],
-            startPoint: .leading, endPoint: .trailing))
+        .background(Color(red: 0.071, green: 0.188, blue: 0.373))
     }
 
     private func simulatorCard(_ offering: SimulatorOffering) -> some View {
@@ -528,4 +556,3 @@ private struct UsageSignInView: View {
         }
     }
 }
-
