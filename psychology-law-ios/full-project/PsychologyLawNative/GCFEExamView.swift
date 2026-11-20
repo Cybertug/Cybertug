@@ -179,7 +179,7 @@ private enum NativePracticeBank {
             }
             records += try parseArray(source, marker: marker)
         }
-        guard records.count == 4073 else { throw NSError(domain: "SimulaPro", code: 5) }
+        guard records.count >= 110 else { throw NSError(domain: "SimulaPro", code: 5) }
         let normalized: [[String: Any]] = records.compactMap { q in
             guard let id = q["staticId"] as? String,
                   let topic = q["topic"] as? String,
@@ -206,10 +206,10 @@ private enum NativePracticeBank {
                 "answerPoint": kind == "hotspot" ? (answer as? [Double] ?? []) : []
             ]
         }
-        guard normalized.count == 4073 else { throw NSError(domain: "SimulaPro", code: 6) }
+        guard normalized.count == records.count else { throw NSError(domain: "SimulaPro", code: 6) }
         let data = try JSONSerialization.data(withJSONObject: normalized)
         let bank = try JSONDecoder().decode([PracticeQuestion].self, from: data)
-        guard Set(bank.map(\.id)).count == 4073 else { throw NSError(domain: "SimulaPro", code: 7) }
+        guard Set(bank.map(\.id)).count == bank.count else { throw NSError(domain: "SimulaPro", code: 7) }
         if let url = cacheURL(true) {
             try? data.write(to: url, options: .atomic)
         }
@@ -276,7 +276,7 @@ private final class NativePracticeStore: ObservableObject {
         self.fe = fe
         do {
             let loaded = try NativePracticeBank.load(fe)
-            guard loaded.count == (fe ? 4073 : 242),
+            guard (fe ? loaded.count >= 110 : loaded.count == 242),
                   Set(loaded.map(\.id)).count == loaded.count else {
                 throw NSError(domain: "SimulaPro", code: 2)
             }
@@ -505,7 +505,7 @@ struct GCFEExamView: View {
                 Text(fe ? "110 questions across 14 subjects · 5 hours 20 minutes of exam time · optional 25-minute break after question 55." :
                         "120 questions · 6 hours 30 minutes · six business and finance domains.")
                     .foregroundStyle(.secondary)
-                Text(fe ? "Loads 4,073 practice questions from the existing FE simulator and caches them on this iPhone. Questions are auto-verified and have not been reviewed by an engineer." :
+                Text(fe ? "Loads the current practice questions from the FE simulator and caches them on this iPhone. Questions are auto-verified and have not been reviewed by an engineer." :
                         "Loads 242 practice questions from the existing GC simulator and caches them on this iPhone. This is independent exam preparation.")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if store.loading { ProgressView("Loading questions…") }

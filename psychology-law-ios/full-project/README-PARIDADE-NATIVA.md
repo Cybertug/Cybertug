@@ -15,6 +15,7 @@ Projeto iOS local `psychology-law-ios/full-project`, confirmado nesta tarefa. O 
 | Loja | Assinaturas nativas | Aba Store em SwiftUI com os quatro simuladores; preços vêm da Apple |
 | Exames | Quatro simuladores nativos | Os quatro continuam com interface nativa; a área de conta não abre páginas web |
 | Questões GC | Download de uma página que agora redireciona para a conta | As 242 questões GC existentes foram empacotadas no app e podem ser carregadas sem rede |
+| Questões FE | Validação fixa de 4.073 questões | Aceita o banco FE atual desde que contenha ao menos 110 questões únicas, suficientes para montar uma prova completa |
 | Visual | Gradiente azul/roxo | Azul marinho, fundo claro e nome SimulaPro |
 
 O painel carrega `/api/customer/dashboard` e `/api/perf/summary` usando a sessão nativa existente. Se falhar, mostra uma mensagem e permite recarregar puxando a tela para baixo.

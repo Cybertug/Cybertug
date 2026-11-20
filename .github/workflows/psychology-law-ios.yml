@@ -147,10 +147,13 @@ jobs:
             python3 - "$BANK" "$MODULE" <<'PY'
           import json, sys
           questions = json.load(open(sys.argv[1]))
-          expected = 242 if sys.argv[2] == "GC" else 4073
-          assert len(questions) == expected
-          assert len({q["id"] for q in questions}) == expected
-          print(f"PASS: {sys.argv[2]} bank loaded and cached in iPhone Simulator: {expected} unique questions.")
+          if sys.argv[2] == "GC":
+              assert len(questions) == 242
+          else:
+              assert len(questions) >= 110
+              assert len({q["family"] for q in questions}) >= 110
+          assert len({q["id"] for q in questions}) == len(questions)
+          print(f"PASS: {sys.argv[2]} bank loaded and cached in iPhone Simulator: {len(questions)} unique questions.")
           PY
             xcrun simctl io "$UDID" screenshot "artifacts/iphone-$MODULE-native.png"
           done
