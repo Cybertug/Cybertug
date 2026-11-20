@@ -19,6 +19,7 @@
 		B1000000000000000000000C /* AccountDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C /* AccountDashboardView.swift */; };
 		B20000000000000000000001 /* questions.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* questions.json */; };
 		B20000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* Assets.xcassets */; };
+		B20000000000000000000003 /* gc-bank.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* gc-bank.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A1000000000000000000000C /* AccountDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDashboardView.swift; sourceTree = "<group>"; };
 		A20000000000000000000001 /* questions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = questions.json; sourceTree = "<group>"; };
 		A20000000000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000003 /* gc-bank.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "gc-bank.json"; sourceTree = "<group>"; };
 		C10000000000000000000007 /* PsychologyLawNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PsychologyLawNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -46,7 +48,7 @@
 /* Begin PBXGroup section */
 		C10000000000000000000002 /* Root */ = {isa = PBXGroup; children = (C10000000000000000000003 /* PsychologyLawNative */, C10000000000000000000005 /* Products */); sourceTree = "<group>"; };
 		C10000000000000000000003 /* PsychologyLawNative */ = {isa = PBXGroup; children = (A10000000000000000000001 /* PsychologyLawApp.swift */, A10000000000000000000002 /* ExamModels.swift */, A10000000000000000000003 /* ExamEngine.swift */, A10000000000000000000004 /* ExamStore.swift */, A10000000000000000000005 /* PearsonUI.swift */, A10000000000000000000006 /* ExamRootView.swift */, A10000000000000000000007 /* SubscriptionPolicy.swift */, A10000000000000000000008 /* SubscriptionStore.swift */, A10000000000000000000009 /* SubscriptionView.swift */, A1000000000000000000000A /* PMICPExamView.swift */, A1000000000000000000000B /* GCFEExamView.swift */, A1000000000000000000000C /* AccountDashboardView.swift */, C10000000000000000000004 /* Resources */, A20000000000000000000002 /* Assets.xcassets */); path = PsychologyLawNative; sourceTree = "<group>"; };
-		C10000000000000000000004 /* Resources */ = {isa = PBXGroup; children = (A20000000000000000000001 /* questions.json */); path = Resources; sourceTree = "<group>"; };
+		C10000000000000000000004 /* Resources */ = {isa = PBXGroup; children = (A20000000000000000000001 /* questions.json */, A20000000000000000000003 /* gc-bank.json */); path = Resources; sourceTree = "<group>"; };
 		C10000000000000000000005 /* Products */ = {isa = PBXGroup; children = (C10000000000000000000007 /* PsychologyLawNative.app */); name = Products; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
@@ -59,7 +61,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		C10000000000000000000009 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (B20000000000000000000001 /* questions.json in Resources */, B20000000000000000000002 /* Assets.xcassets in Resources */); runOnlyForDeploymentPostprocessing = 0; };
+		C10000000000000000000009 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (B20000000000000000000001 /* questions.json in Resources */, B20000000000000000000002 /* Assets.xcassets in Resources */, B20000000000000000000003 /* gc-bank.json in Resources */); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */

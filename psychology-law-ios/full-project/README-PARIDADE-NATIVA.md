@@ -14,6 +14,7 @@ Projeto iOS local `psychology-law-ios/full-project`, confirmado nesta tarefa. O 
 | Biblioteca | Quatro módulos fixos | Lista da API `/api/customer/dashboard`, busca e abertura dos módulos iOS compatíveis |
 | Loja | Assinaturas nativas | Aba Store em SwiftUI com os quatro simuladores; preços vêm da Apple |
 | Exames | Quatro simuladores nativos | Os quatro continuam com interface nativa; a área de conta não abre páginas web |
+| Questões GC | Download de uma página que agora redireciona para a conta | As 242 questões GC existentes foram empacotadas no app e podem ser carregadas sem rede |
 | Visual | Gradiente azul/roxo | Azul marinho, fundo claro e nome SimulaPro |
 
 O painel carrega `/api/customer/dashboard` e `/api/perf/summary` usando a sessão nativa existente. Se falhar, mostra uma mensagem e permite recarregar puxando a tela para baixo.
@@ -25,6 +26,7 @@ O painel carrega `/api/customer/dashboard` e `/api/perf/summary` usando a sessã
 - Os oito arquivos JavaScript de referência passaram em `node --check`.
 - Todos os arquivos Swift referenciados em `project.pbxproj` existem, inclusive `AccountDashboardView.swift`.
 - A nova área de conta não usa WebView. O código anterior de GC/FE ainda usa um WKWebView sem interação para desenhar diagramas SVG dentro da tela nativa.
+- O banco GC incluído foi validado com 242 questões e 242 IDs únicos; o teste de simulador confirma seu carregamento no cache do app.
 - Esta máquina Windows não tem Xcode. O app **não foi compilado nem executado** no simulador aqui. A pasta `Tests` original não integra um target de testes Xcode.
 
 ## Build e teste no Mac

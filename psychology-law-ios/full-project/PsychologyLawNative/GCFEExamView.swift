@@ -125,14 +125,21 @@ private enum NativePracticeBank {
     }
 
     static func downloadGC() async throws -> [PracticeQuestion] {
-        var request = URLRequest(url: URL(string: "https://gc.simulapro.us/")!)
-        request.timeoutInterval = 45
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard (response as? HTTPURLResponse)?.statusCode == 200,
-              let source = String(data: data, encoding: .utf8) else {
-            throw NSError(domain: "SimulaPro", code: 8)
+        let records: [[String: Any]]
+        if let resourceURL = Bundle.main.url(forResource: "gc-bank", withExtension: "json"),
+           let data = try? Data(contentsOf: resourceURL),
+           let bundled = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            records = bundled
+        } else {
+            var request = URLRequest(url: URL(string: "https://gc.simulapro.us/")!)
+            request.timeoutInterval = 45
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let source = String(data: data, encoding: .utf8) else {
+                throw NSError(domain: "SimulaPro", code: 8)
+            }
+            records = try parseArray(source, marker: "let bank=")
         }
-        let records = try parseArray(source, marker: "let bank=")
         guard records.count == 242 else { throw NSError(domain: "SimulaPro", code: 9) }
         let normalized: [[String: Any]] = records.compactMap { q in
             guard let id = q["id"] as? String,
